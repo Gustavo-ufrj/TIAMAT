@@ -1,0 +1,314 @@
+.accordion-delphi{
+	filter:brightness(0%) invert(100%);
+	margin-right:0px;
+}
+
+.accordion-button::after{
+	filter:brightness(0%) invert(100%);
+}
+
+.accordion-button:focus{
+box-shadow:none;
+}
+
+#delphi-info{
+	margin:5px auto;
+	width:50%;
+}
+
+.description {
+	margin:5px 0px;
+	font-size:14px;
+}
+label.description {
+	display:block;
+	font-size:18px;
+	margin-bottom:0px;
+}
+
+.error-msg {
+	font-size:14px;
+	color:red;
+}
+
+
+.question-container {
+	float:left;
+	width:100%;
+	margin:5px 0px;
+	
+	background-color:#ffffff;
+	border:1px solid #4f4f4f;
+	font-size:14px;
+}
+
+.question-header {
+	float:left;
+	width:100%;
+	
+	background-color:#616161;
+	color:#ffffff;
+}
+.question-header span {
+	float:left;
+	padding:5px;
+}
+.question-header .toggle-question {
+	float:right;
+	padding:5px;
+	
+	color:inherit;
+	cursor:pointer;
+}
+
+.question-content {
+	float:left;
+	width:100%;
+}
+.question-content textarea{
+	width:50%;
+	height:150px;
+	margin:0px 0px 5px 5px;
+	resize:none;
+}
+
+.question-text {
+	margin:5px;
+}
+
+.question-option-container {
+	float:left;
+	margin:0px 0px 5px 5px;
+}
+
+.question-option {}
+
+.question-option-text {
+	margin:0px;
+}
+
+.buttons-container {
+	float:left;
+	width:100%;
+	
+	text-align:center;
+}
+.buttons-container button {
+	margin:5px 2px;
+}
+
+.error-msg {
+	font-size:14px;
+	color:red;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#new-question-template-container {
+	font-size:14px;
+	text-align:center;
+}
+
+#new-question-text {
+	margin:0px 0px 5px 0px;
+	width:100%;
+	height:150px;
+	resize:none;
+}
+
+#new-question-options-container {
+	font-size:inherit;
+}
+
+.new-question-delete-option {
+	float:right;
+	width:14px;
+	height:14px;
+	
+	background-color:#ff0000;
+	border:2px solid #ffffff;
+	border-radius:50%;
+	
+	font-family: "Monospace", sans-serif;
+	font-weight: bold;
+	text-align:center;
+	line-height:12px;
+	color:#ffffff;
+	cursor:pointer;
+}
+.new-question-delete-option:hover {
+	box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-moz-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-ms-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-webkit-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-o-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+}
+
+#new-question-option-buttons-container {
+	width:100%;
+	
+	text-align:center;
+	font-size:11px;
+	font-weight:bold;
+}
+
+.question-container {
+	float:left;
+	width:100%;
+	margin:5px 0px;
+	
+	background-color:#ffffff;
+	border:1px solid #4f4f4f;
+	font-size:14px;
+}
+
+.question-header {
+	float:left;
+	width:100%;
+	
+	background-color:#616161;
+	color:#ffffff;
+}
+.question-header span {
+	float:left;
+	padding:5px;
+}
+.question-header .toggle-question {
+	float:right;
+	padding:5px;
+	
+	color:inherit;
+	cursor:pointer;
+}
+
+.question-content {
+	float:left;
+	width:100%;
+}
+.question-text {
+	margin:10px;
+}
+
+.question-option-container {
+	float:left;
+	margin:0px 0px 5px 5px;
+}
+.question-option {}
+
+.buttons-container {
+	float:left;
+	width:100%;
+	
+	text-align:center;
+}
+.buttons-container button {
+	margin:5px 2px;
+}
+
+.error-msg {
+	font-size:14px;
+	color:red;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.question-container {
+	float:left;
+	width:100%;
+	margin:5px 0px;
+	
+	background-color:#ffffff;
+	border:1px solid #4f4f4f;
+	font-size:14px;
+}
+
+.question-header {
+	float:left;
+	width:100%;
+	
+	background-color:#616161;
+	color:#ffffff;
+}
+.question-header span {
+	float:left;
+	padding:5px;
+}
+.question-header .toggle-question {
+	float:right;
+	padding:5px;
+	
+	color:inherit;
+	cursor:pointer;
+}
+
+.question-content {
+	float:left;
+	width:100%;
+}
+
+.question-text {
+	margin:10px;
+}
+
+.question-text-answers {
+	display:block;
+	margin:0px 10px;
+}
+
+.question-text-answer-container {
+	display:block;
+	margin-bottom:10px;
+	
+	border:1px solid #616161;
+}
+.question-text-answer-container label {
+	display:block;
+	margin:0px;
+	padding:5px 5px;
+	
+	color:#ffffff;
+	
+	background-color:#616161;
+}
+
+.question-text-answer {
+	margin:5px;
+}
+
+.question-chart-container {
+	margin:0px auto;
+}
+
+.question-chart-container {
+	padding:5px;
+}
+
+.question-chart-data-container {}
+
+.question-chart-data {}
+
+.error-msg {
+	font-size:14px;
+	color:red;
+}
