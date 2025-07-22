@@ -1,0 +1,21 @@
+      .child-opener-image
+        {
+            cursor: pointer;
+        }
+
+
+        .child-opener-image
+        {
+            opacity: 0.5;
+        }
+
+        .child-opener-image:hover
+        {
+            opacity: 0.8;
+        }
+
+
+        .child-opener-image-column
+        {
+            text-align: center;
+        }
