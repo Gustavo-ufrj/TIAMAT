@@ -1,0 +1,149 @@
+#new-question-template-container {
+	font-size:14px;
+	text-align:center;
+}
+
+#new-question-text {
+	margin:0px 0px 5px 0px;
+	width:100%;
+	height:150px;
+	resize:none;
+}
+
+#new-question-options-container {
+	font-size:inherit;
+}
+
+.new-question-delete-option {
+	float:right;
+	width:14px;
+	height:14px;
+	
+	background-color:#ff0000;
+	border:2px solid #ffffff;
+	border-radius:50%;
+	
+	font-family: "Monospace", sans-serif;
+	font-weight: bold;
+	text-align:center;
+	line-height:12px;
+	color:#ffffff;
+	cursor:pointer;
+}
+.new-question-delete-option:hover {
+	box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-moz-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-ms-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-webkit-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+	-o-box-shadow:0px 0px 3px rgba(0, 0, 0, 0.5);
+}
+
+#new-question-option-buttons-container {
+	width:100%;
+	
+	text-align:center;
+	font-size:11px;
+	font-weight:bold;
+}
+
+#change-participant-container {
+	font-size:14px;
+	text-align:center;
+}
+
+.question-container {
+	float:left;
+	width:100%;
+	margin:10px 0px;
+	
+	background-color:#ffffff;
+	border:1px solid #4f4f4f;
+	font-size:14px;
+}
+
+.question-header {
+	float:left;
+	width:100%;
+	
+	background-color:#616161;
+	color:#ffffff;
+}
+.question-header span {
+	float:left;
+	padding:10px;
+}
+.question-header .toggle-question {
+	float:right;
+	padding:10px;
+	
+	color:inherit;
+	cursor:pointer;
+}
+
+.question-content {
+	float:left;
+	width:100%;
+}
+
+.question-text {
+	margin:10px;
+}
+
+.question-text-answers {
+	display:block;
+	margin:0px 10px;
+}
+
+.question-text-answer-container {
+	display:block;
+	margin-bottom:10px;
+	
+	border:1px solid #616161;
+}
+.question-text-answer-container label {
+	display:block;
+	margin:0px;
+	padding:10px 10px;
+	
+	color:#ffffff;
+	
+	background-color:#616161;
+}
+
+.question-text-answer {
+	margin:10px;
+}
+
+.question-chart-container {
+	margin:0px auto;
+	width:50%;
+}
+
+.question-chart-container {
+	padding:10px;
+}
+
+.question-chart-data-container {}
+
+.question-chart-data {}
+
+.error-msg {
+	font-size:14px;
+	color:red;
+}
+#interview-info {
+	margin:10px auto;
+	width:50%;
+}
+
+.description {
+	margin:10px 0px;
+	font-size:14px;
+}
+label.description {
+	display:block;
+	font-size:18px;
+	margin-bottom:0px;
+}
+
+
