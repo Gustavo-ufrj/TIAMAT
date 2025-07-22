@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<tiamat>
+	<FTAmethod id="0" name="FTA Subworkflow" input_format="Array" output_format="Array" base_folder="/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="1" name="Delphi" input_format="Array" output_format="Array" base_folder="/FTA/delphi/">
+		<user role="Coordinator" />
+		<user role="Participant" />
+	</FTAmethod>
+	<FTAmethod id="2" name="SWOT" input_format="Array" output_format="Matrix" base_folder="/FTA/swot/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="3" name="Cross-Impact Analysis" input_format="List of events" output_format="Cross-Impact Matrix" base_folder="/FTA/cia/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="4" name="Option Analysis" input_format="Array" output_format="Matrix" base_folder="/FTA/oa/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="5" name="Interviews" input_format="Array" output_format="Array" base_folder="/FTA/interview/">
+		<user role="Interviewer" />
+		<user role="Interviewee" />
+	</FTAmethod>
+	<FTAmethod id="6" name="Futures Wheel" input_format="Array" output_format="Array" base_folder="/FTA/fw/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="7" name="Stakeholder Analysis" input_format="Array" output_format="Matrix" base_folder="/FTA/sa/">
+		<user role="Participant" />
+	</FTAmethod>
+	<FTAmethod id="8" name="Scenario" input_format="Array" output_format="Array" base_folder="/FTA/scenario/">
+		<user role="Writer" />
+	</FTAmethod>
+	<FTAmethod id="9" name="Bibliometrics" input_format="Key-words" output_format="Bibliometric indicators" base_folder="/FTA/bibliometrics/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="10" name="Brainstorming" input_format="Array" output_format="Array" base_folder="/FTA/brainstorming/">
+		<user role="Responsible" />
+	</FTAmethod>
+	<FTAmethod id="11" name="Roadmap" input_format="Array" output_format="Map" base_folder="/FTA/roadmap/">
+		<user role="Responsible" />
+	</FTAmethod>	
+	<FTAmethod id="12" name="Extrapolation" input_format="Array" output_format="Graph" base_folder="/FTA/extrapolation/">
+		<user role="Participant" />
+	</FTAmethod>
+	<FTAmethod id="13" name="TIA" input_format="Array" output_format="Array" base_folder="/FTA/tia/">
+		<user role="Participant" />
+	</FTAmethod>
+</tiamat>
