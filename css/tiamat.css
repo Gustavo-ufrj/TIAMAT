@@ -1,0 +1,286 @@
+
+
+.tiamat_title_logo{
+	height:50px;
+	width:auto;
+}
+
+.tiamat_title_profile_picture_large{
+	height:100px;
+	width:auto;
+}
+
+.tiamat_title_profile_picture_very_large{
+	width:150px;
+	height:auto;
+}
+
+.tiamat_title_profile_picture_small{
+	height:40px;
+	width:auto;
+}
+
+.tiamat_title {
+width:100%;
+height:80px;
+top:0;
+right:0;
+bottom:0;
+left:0;
+background-color:rgba(40, 40, 40, 1);
+box-shadow:0px 0px 2px 1px rgba(0,0,0,0.2);
+border-top:0px solid rgba(255, 255, 255, 0.83);
+border-bottom:0px solid rgba(255, 255, 255, 0.83);
+}
+
+.tiamat_title_text {
+	color:#CCCCCC;
+	text-decoration:none;
+}
+
+.tiamat_title_text:hover {
+	color:#FFFFFF;
+	text-decoration:none;
+}
+
+hr.tiamat_double_line { 
+	border: 0;
+	height: 0; 
+	border-top: 1px solid #bbb; 
+	border-bottom: 1px solid #EEEEEE; 
+}
+
+
+.tiamat_wide{
+	width:1200px;
+}
+
+.tiamat_center{
+	text-align:center;
+}
+
+.tiamat_center_table{
+	margin-left:auto; 
+    margin-right:auto;
+}
+
+
+.white{
+	color:white;
+}
+
+.green{
+	color:green;
+}
+.red{
+	color:red;
+}
+.blue{
+	color:blue;
+}
+.black{
+	color:black;
+}
+
+
+
+
+.tiamat_font_title_large {
+	font:normal normal normal 56px/1.1em Arial,'ms pgothic',dotum,helvetica,sans-serif ;
+	color:#FFFFFF; vertical-align:middle;
+}
+.tiamat_font_title_normal {
+	font:normal normal bold 12px/1.1em Arial,'ms pgothic',dotum,helvetica,sans-serif ;
+	color:#B6B6B6; vertical-align:middle;
+}
+
+.tiamat_width_5px{
+	width:5px;
+}
+
+
+
+.tiamat_width_10{
+	width:10%;
+}
+.tiamat_width_15{
+	width:15%;
+}
+
+.tiamat_width_30{
+	width:30%;
+}
+
+.tiamat_width_45{
+	width:45%;
+}
+
+.tiamat_width_100{
+	width:100%;
+}
+
+.tiamat_height_30px {
+	height: 30px; 
+}
+
+
+.tiamat_height_60px {
+	height: 60px; 
+}
+
+.tiamat_height_80px {
+	height: 80px; 
+}
+
+.tiamat_height_100px {
+	height: 100px; 
+}
+
+.tiamat_height_120px {
+	height: 120px; 
+}
+
+.tiamat_height_100 {
+	height: 100%; 
+}
+
+}
+
+
+.tiamat_top {
+	vertical-align:top;
+}
+
+
+div.tiamat_logged_profile_external {
+	display: table; 
+	position:relative; 
+	height: 40px; 
+	margin-left: auto; 
+	cursor: pointer;
+}
+
+
+div.tiamat_logged_profile_intermediate {
+	display: table; 
+	position:relative; 
+	height: 40px; 
+	width: 100%; 
+	margin-left: auto; 
+	margin-right: auto;	
+}
+
+div.tiamat_logged_profile_picture_frame {
+	position: relative; 
+	width:100px; 
+	height:100px;
+}
+
+div.tiamat_logged_profile_picture {
+	position: absolute; 
+	top: 85%; 
+	left: 50%;
+	transform: translate(-50%, -15%); 
+	text-align: center;
+}
+
+div.tiamat_logged_profile_picture_gray_bar {
+	width:100px;  
+	height: 18px; 
+	background: linear-gradient(rgba(0, 0, 0, 0.3),rgba(0, 0, 0, 0.3)); 
+}
+
+
+div.tiamat_logged_profile_picture_gray_bar:hover {
+	background: linear-gradient(rgba(255, 0, 0, 0.5),rgba(255, 0, 0, 0.5)); 
+	color: white;
+}
+
+span.tiamat_logged_profile_name {
+	display: table-cell;
+	vertical-align: middle; 
+	font-weight:bold;
+}
+
+span.tiamat_logged_profile_name_email {
+	display: table-cell;
+	vertical-align: middle;
+	text-align: right;
+	font-size:15px;
+	white-space: nowrap;
+}
+
+.tiamat_right{
+	text-align:right;
+}
+
+.tiamat_vertical_middle{
+	vertical-align:middle;
+}
+
+#tiamat_title_popup {
+    position:absolute;
+    display:none;
+    top:50;
+    height:155;
+    right:-10;
+    min-width:250px;
+    margin-top:0px;
+    margin-right:0px;
+    background-color:#fff;
+    z-index:2;
+    padding:5px;
+    box-shadow: 0px 0px 2px 1px #BBBBBB;
+    border: solid 1px #888888;
+    cursor: default;
+}
+
+
+
+.tiamat_font_footer_title {
+	font:normal normal normal 18px/1.3em Arial,'ms pgothic',dotum,helvetica,sans-serif ;
+	color:#1C1C1C;
+	font-weight:bold;
+}
+
+.tiamat_font_footer_text {
+	font:normal normal normal 12px/1.3em Verdana,geneva,sans-serif ;
+	text-align:center;
+}
+
+.bold {
+	font-weight:bold;
+}
+
+
+.tiamat_footer {
+	width:100%;
+	top:0;
+	right:0;
+	bottom:0;
+	left:0;
+	background-color:#C4C4C3;
+    border-top:0px solid transparent;
+	border-bottom:0px solid transparent;
+}
+
+.tiamat_copyright {
+	width:100%;
+	top:0;
+	right:0;
+	bottom:0;
+	left:0;
+	background-color:rgba(40, 40, 40, 1);
+    border-top:0px solid transparent;
+	border-bottom:0px solid transparent;
+}
+
+
+.tiamat_font_copyright {
+	font:normal normal bold 12px/1.1em Arial,'ms pgothic',dotum,helvetica,sans-serif ;
+	color:#B6B6B6; vertical-align:middle;
+}
+
+.tiamat_font_copyright :hover {
+	color:#AA0000; 
+}

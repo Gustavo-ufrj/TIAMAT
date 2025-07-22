@@ -1,0 +1,433 @@
+
+
+/************************  NEW text, used in migration for exceptions **************************/
+ul.font_100, ol.font_100{
+    color : rgb(8, 8, 8); font-family : 'Arial, Helvetica, sans-serif', serif; font-size : 10px; font-style : normal; font-variant : normal; line-height : 1.1em; font-weight : normal; margin : 0; text-decoration : none; line-height : normal; letter-spacing : normal;
+}
+
+.font_100 li, .font_100 li{
+    margin-bottom : 12px
+}
+
+.flex_display {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+}
+
+/*  padding-top - muhahahaha, check out w3 spec https://www.w3.org/TR/CSS2/box.html#collapsing-margins
+    Incredible! in display:block margin-top collapses!
+*/
+.flex_vbox{
+    box-sizing : border-box;
+    padding-top: 0.01em;
+    padding-bottom: 0.01em;
+}
+
+
+.singleLine {
+    white-space: nowrap;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: normal;
+}
+
+/* For 3D Transforms Safari Workaround*/
+[data-z-counter]{z-index:0;}
+[data-z-counter="0"]{z-index:auto;}
+
+/* For SplitHtmlText */
+letter{position:relative;display:inline-block;}
+word{display:inline-block;white-space:nowrap;}
+
+word.space,
+letter.space{display:inline;}
+
+form.monitor {
+	width: 637px;
+	height: 351px;
+	background: #f0f0f0;
+}
+
+
+label {
+    color: #555;
+    display: inline-block;
+    margin-left: 18px;
+    padding-top: 10px;
+    font-size: 14px;
+}
+
+td.label {
+    padding-top: 5px;
+    color: #555;
+    font-size: 14px;
+}
+
+
+input[type=text],
+input[type=password] {
+    width: 290px;
+    height: 35px;
+}
+
+
+
+.TIAMATButton {
+	background-color:#616161;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #4f4f4f;
+	cursor:pointer;
+	color:#ffffff;
+	display:inline-block;
+	font-family:Verdana;
+	font-size:13px;
+	font-weight:bold;
+	padding:5px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #636363;
+	width:100px;
+	opacity: 0.95; 
+}
+
+
+.TIAMATButton:hover {
+	background-color:#333333;
+	opacity: 0.65; 
+}
+
+.TIAMATButton:active {
+	position:relative;
+	top:1px;
+	opacity: 0.7; 
+}
+
+
+.step {
+	background-color:#6c757d;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #6c757d;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Verdana;
+	font-size:13px;
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+	font-weight:bold;
+	text-decoration:none;
+	text-shadow:0px 0px 0px black;
+	width:278px;
+	height:278px;
+}
+
+.stepUnlocked {
+	background-color:#6c757d;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #6c757d;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Verdana;
+	font-size:13px;
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+	font-weight:bold;
+	text-decoration:none;
+	text-shadow:0px 0px 0px black;
+	width:278px;
+	height:278px;
+}
+
+.stepLocked {
+	background-color:#6c757d;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #6c757d;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Verdana;
+	font-size:13px;
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+	font-weight:bold;
+	text-decoration:none;
+	text-shadow:0px 0px 0px black;
+	width:278px;
+	height:278px;
+}
+
+
+.stepActive {
+	background-color:#519872;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #519872;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Verdana;
+	font-size:13px;
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+	font-weight:bold;
+	text-decoration:none;
+	text-shadow:0px 0px 0px black;
+	width:278px;
+	height:278px;
+}
+
+.stepConcluded {
+	background-color:#A05344;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #A05344;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Verdana;
+	font-size:13px;
+	padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+	font-weight:bold;
+	text-decoration:none;
+	text-shadow:0px 0px 0px black;
+	width:278px;
+	height:278px;
+}
+
+
+a.changePicture {
+    font-family : Arial, Helvetica, sans-serif;
+	color: white; 
+	font-size:14;
+	
+
+}
+
+
+div.grayBar {
+	width:100px;  
+	height: 18px; 
+	background: linear-gradient(rgba(0, 0, 0, 0.3),rgba(0, 0, 0, 0.3)); 
+}
+
+div.grayBar:hover {
+	background: linear-gradient(rgba(255, 0, 0, 0.5),rgba(255, 0, 0, 0.5)); 
+	color: white;
+}
+
+
+#popup {
+    position:absolute;
+    display:none;
+    top:50;
+    height:155;
+    right:-10;
+    min-width:250px;
+    margin-top:0px;
+    margin-right:0px;
+    background-color:#fff;
+    z-index:2;
+    padding:5px;
+    box-shadow: 0px 0px 2px 1px #BBBBBB;
+    border: solid 1px #888888;
+    cursor: default;
+}
+
+	.realupload {
+	      position: relative;
+	      float: right;
+	      top: -21px;
+	      right: 20px;
+	       opacity:0;
+	      -moz-opacity:0;
+	      filter:alpha(opacity:0);		  
+	}
+	
+	
+	.fakeupload {
+ 		width: 100%;	      
+		background: url("/img/selectFile.gif") no-repeat 99% 51%;
+		background-size: 25px 25px;
+		cursor:default;
+		background-color: #FFF;
+		border: 1px solid #e4e4e4;
+		letter-spacing: 1px;
+		font-size: 11px;
+		color: #333;
+		padding-left: 3px;
+		padding-top: 3px;
+		padding-bottom: 3px;
+		margin-left: 3px;
+		height: 15px;
+		vertical-align: middle;
+	}
+
+		  
+
+
+table.metro{
+	background-color: #333;
+	font-family : Verdana;
+	font-style: normal;
+	font-weight: lighter;
+	padding:10px;
+	text-align: left;
+}
+
+th.metro{
+	background-color: #232323;
+    font-family : Verdana;
+	font-style: normal;
+	font-weight: lighter;
+	font-size:20;
+	color:#FFFFFF;
+	text-align: left;
+	padding:10px;
+	
+}
+
+td.metroTitle{
+	background-color: #454545;
+	font-size:16;
+	color:#FFFFFF;
+	padding:5px;	
+}
+
+td.metro0{
+	background-color: #F9F9F9;
+	font-size:14;
+	color:#000000;
+	padding:5px;
+	border: solid 1px #DDDDDD;
+
+}
+td.metro1{
+	background-color: #FFFFFF;
+	font-size:14;
+	color:#000000;
+	padding:5px;
+	border: solid 1px #DDDDDD;
+}
+
+img.changeOpacity {
+	opacity: 0.4; 
+}
+
+
+img.changeOpacity:hover {
+	opacity: 0.7; 
+}
+
+
+textarea, input, select{
+    padding: 5px;
+    font-family: Verdana, Helvetica, sans-serif;
+    font-size: 12px;
+    outline: none;
+    -webkit-box-sizing : border-box; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing    : border-box; /* Firefox, other Gecko */
+    box-sizing         : border-box; /* Opera/IE 8+ */
+}
+
+body.not-ready{
+   visibility: hidden;
+}
+
+
+
+/* INICIO DO CSS DO POPUP
+*/
+
+div.div_popup {
+width:100%;
+height:100%;
+opacity:.80;
+top:0;
+left:0;
+display:none;
+position:fixed;
+background-color:#ffffff;
+overflow:auto
+}
+
+div.div_popup_contact {
+position:absolute;
+left:50%;
+top:17%;
+margin-left:-202px;
+font-family:Arial, Helvetica, sans-serif;
+display:none;
+}
+
+form.form_popup{
+width:320px;
+padding:10px 0px;
+border:2px solid #888888;
+font-family:Arial, Helvetica, sans-serif;
+background-color:#fff
+}
+
+h2.popup_header{
+color:#ffffff;
+background-color:#525252;
+padding:10px 15px;
+margin:-10px 0px;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12px;
+font-weight:bold;
+}
+
+p.popup{
+font-size:15px;
+margin-top:5px;
+color:#666;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+input.popup{
+margin-top:5px;
+margin-bottom:5px;
+width:290px;
+padding:10px;
+background-color:#fff;
+border:solid 1px #888888;
+font-size:15px;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+select.popup{
+margin-top:5px;
+width:290px;
+padding:10px;
+border:solid 1px #888888;
+font-size:15px;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+/* FIM DO CSS DO POPUP */
+
