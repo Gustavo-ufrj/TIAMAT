@@ -1,0 +1,49 @@
+
+._jsPlumb_overlay{
+	height:40px;
+	font-size:16px;
+}
+
+.fw-event-text {
+	font-size:16px;
+	line-height:15px;
+	padding-top:15px;
+}
+
+.stakeholder {
+	width:80px;
+	height:80px;
+	
+	border-width:2px;
+	border-radius:50%;
+	position:absolute;
+}
+	
+.interest {
+	width:120px;
+	height:80px;
+	
+	border-width:2px;
+	position:absolute;
+}
+     .child-opener-image
+        {
+            cursor: pointer;
+        }
+
+
+        .child-opener-image
+        {
+            opacity: 0.5;
+        }
+
+        .child-opener-image:hover
+        {
+            opacity: 0.8;
+        }
+
+
+        .child-opener-image-column
+        {
+            text-align: center;
+        }
