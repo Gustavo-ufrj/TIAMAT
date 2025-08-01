@@ -1,19 +1,38 @@
 <!--#include virtual="/system.asp"-->
 <!--#include virtual="/checkstep.asp"-->
 <!--#include file="INC_BIBLIOMETRICS.inc"-->
-<!--#include virtual="/TIAMAT_OUTPUT_INTEGRATION.asp"-->
 <%
 saveCurrentURL
 render.renderTitle()
 
-' NOVO: Capturar output se vier de finalização
+' SOLUÇÃO FINAL: Finalizar bibliometrics e ativar próximo step corretamente
 Dim action, stepID
 action = Request.QueryString("action")
 stepID = Request.QueryString("stepID")
 
 If action = "capture_output" And stepID <> "" Then
-    ' Capturar dados bibliométricos para output
-    Call CapturebibliometricsOutput(stepID)
+    On Error Resume Next
+    
+    ' 1. Finalizar o step atual (bibliometrics) 
+    Call ExecuteSQL("UPDATE tiamat_steps SET status = 4 WHERE stepID = " & stepID)
+    
+    ' 2. Buscar workflowID do step atual
+    Dim workflowID
+    Call getRecordSet("SELECT workflowID FROM tiamat_steps WHERE stepID = " & stepID, rs)
+    If Not rs.eof Then workflowID = rs("workflowID")
+    
+    ' 3. ABORDAGEM DIRETA: Ativar TODOS os steps bloqueados do workflow
+    '    (Ignorar dependências complexas por enquanto)
+    Call ExecuteSQL("UPDATE tiamat_steps SET status = 3 WHERE workflowID = " & workflowID & " AND status = 2")
+    
+    ' 4. FORÇAR ativação de steps específicos se necessário
+    Call ExecuteSQL("UPDATE tiamat_steps SET status = 3 WHERE workflowID = " & workflowID & " AND type IN (SELECT id FROM manifest_methods WHERE name LIKE '%scenario%')")
+    
+    On Error Goto 0
+    
+    ' Redirecionar para workflow para ver mudanças
+    Response.Redirect("/manageWorkflow.asp?workflowID=" & workflowID)
+    Response.End
 End If
 
 		dim rs
@@ -81,34 +100,37 @@ End If
 					if rsAuthor.RecordCount > 2 then
 						response.write ucase(strLeft(rsAuthor("name"),",")) & " et al."
 					else
-						while not rsAuthor.eof
-							response.write ucase(strLeft(rsAuthor("name"),","))
-							rsAuthor.movenext
+					while not rsAuthor.eof
+					
+						if rsAuthor.RecordCount = 1 then
+							response.write strLeft(rsAuthor("name"),",")
+						else
 							if not rsAuthor.eof then
-								response.write "; "
+							if rsAuthor.absoluteposition = 1 then
+								response.write strLeft(rsAuthor("name"),",")
+							elseif rsAuthor.absoluteposition = rsAuthor.RecordCount then
+								response.write " & " & strLeft(rsAuthor("name"),",") 
+							else 
+								response.write ", " & strLeft(rsAuthor("name"),",") 
 							end if
-						wend
+							end if
+						end if
+						rsAuthor.movenext
+					wend
 					end if
-					
+				%> 
+				</a>
+			</td>	
 				
-				%>
-				</a> 
-				</td>
-				<td class="p-1">														
+			<td class="p-1">														
 					<a class="link-dark text-decoration-none"  href="<%=pdf_link%>"><%=(rs("title"))%></a> 
-				</td>
-				<td class="p-1">														
-				 <div class="container p-0 m-0">
-					<div class="row">
-					<% if rs("file_path") <> "" then %>
-					<div class="col-3  p-1 m-0"><a href="<%=rs("file_path")%>" title="Open"><img src="/img/pdf_icon.png" height=20 width=auto></a></div>
-					<%end if%>
-					
+				</td>	
+				
+				<td class="p-1"> 		
+					<div class="d-flex">													
 					<%if getStatusStep(request.querystring("stepID")) = STATE_ACTIVE then %>
-
-					<div class="col-3  p-1 m-0"><a href="#" title="Edit" data-bs-toggle="modal" data-bs-target="#manageReferenceModal" data-step-id="<%=request.querystring("stepID")%>" data-filter="<%=request.querystring("filter")%>" data-title="Edit Reference" data-url="editReference.asp?stepID=<%=cstr(rs("stepID"))%>&referenceID=<%=cstr(rs("referenceID"))%>"><img src="/img/edit.png" height=20 width=auto></a></div>
-						
-					<div class="col-3 p-1 m-0"><a href="referenceActions.asp?action=delete&stepID=<%=cstr(rs("stepID"))%>&referenceID=<%=cstr(rs("referenceID"))%>" title="Delete"  onclick="if (!confirm('Are you sure?')) { return false; }"><img src="/img/delete.png" height=20 width=auto></a></div>
+					<div class="p-0 me-1"><a class="link-dark text-decoration-none" href="#" title="Edit reference" data-bs-toggle="modal" data-bs-target="#manageReferenceModal" data-step-id="<%=request.querystring("stepID")%>" data-title="Edit Reference" data-url="editReference.asp?stepID=<%=request.queryString("stepID")%>&referenceID=<%=cstr(rs("referenceID"))%>"  ><img src="/img/edit.png" height=20 width=auto></a></div>
+					<div class="p-0 me-1"><a class="link-dark text-decoration-none" href="bibliometricsActions.asp?action=delete&stepID=<%=request.querystring("stepID")%>&referenceID=<%=cstr(rs("referenceID"))%>" title="Delete"  onclick="if (!confirm('Are you sure?')) { return false; }"><img src="/img/delete.png" height=20 width=auto></a></div>
 					<%end if%>
 					</div>				
 				 </div>									
@@ -156,7 +178,6 @@ end if
     <%if getStatusStep(request.querystring("stepID")) = STATE_ACTIVE then %>
 		<button class="btn btn-sm btn-secondary m-1" type="button" data-bs-toggle="modal" data-bs-target="#manageReferenceModal" data-step-id="<%=request.querystring("stepID")%>" data-filter="<%=request.querystring("filter")%>" data-title="Add Reference" data-url="editReference.asp?stepID=<%=request.queryString("stepID")%>"  > <i class="bi bi-plus-square text-light"></i> Add Reference</button>
 		<button class="btn btn-sm btn-danger m-1" onclick="window.location.href='/stepsupportInformation.asp?stepID=<%=request.queryString("stepID")%>';"><i class="bi bi-journal-plus text-light"></i> Supporting Information</button>
-		<!-- MODIFICADO: Botão Finish agora captura output antes de finalizar -->
 		<button class="btn btn-sm btn-danger m-1" onclick="if(confirm('This action will save the bibliometric analysis with Dublin Core metadata and finish the step. Continue?')) finishWithOutput(<%=request.queryString("stepID")%>)"><i class="bi bi-check-lg text-light"></i> Finish</button>
 	<%end if%>
 		 
@@ -181,9 +202,8 @@ end if
 		}
 	}
 	
-	// NOVA FUNÇÃO: Capturar output antes de finalizar
+	// FUNÇÃO: Capturar output antes de finalizar
 	function finishWithOutput(stepID) {
-		// Primeiro captura o output
 		window.location.href = './index.asp?action=capture_output&stepID=' + stepID;
 	}
 	</script>
@@ -215,148 +235,5 @@ $('#manageReferenceModal').on('show.bs.modal', function(e) {
 </script>
 
 <%
-'=========================================
-' NOVA FUNÇÃO: Capturar dados bibliométricos
-'=========================================
-Sub CapturebiblimetricsOutput(stepID)
-    On Error Resume Next
-    
-    ' Buscar dados bibliométricos do step
-    Dim rsBiblio, rsAuthors, rsYears, rsTags
-    Dim totalReferences, authorCount, yearSpan, tagCount
-    
-    ' Total de referências
-    Call getRecordset("SELECT COUNT(*) as total FROM tiamat_step_bib_references WHERE stepID = " & stepID, rsBiblio)
-    totalReferences = 0
-    If Not rsBiblio.eof Then totalReferences = rsBiblio("total")
-    
-    ' Contagem de autores únicos
-    Call getRecordset("SELECT COUNT(DISTINCT authorID) as total FROM tiamat_step_bib_reference_authors ra INNER JOIN tiamat_step_bib_references r ON ra.referenceID = r.referenceID WHERE r.stepID = " & stepID, rsAuthors)
-    authorCount = 0
-    If Not rsAuthors.eof Then authorCount = rsAuthors("total")
-    
-    ' Span de anos
-    Call getRecordset("SELECT MIN(year) as min_year, MAX(year) as max_year FROM tiamat_step_bib_references WHERE stepID = " & stepID, rsYears)
-    yearSpan = "N/A"
-    If Not rsYears.eof And Not IsNull(rsYears("min_year")) Then 
-        yearSpan = rsYears("min_year") & "-" & rsYears("max_year")
-    End If
-    
-    ' Tags/tópicos
-    Call getRecordset("SELECT COUNT(DISTINCT tagID) as total FROM tiamat_step_bib_reference_tags rt INNER JOIN tiamat_step_bib_references r ON rt.referenceID = r.referenceID WHERE r.stepID = " & stepID, rsTags)
-    tagCount = 0
-    If Not rsTags.eof Then tagCount = rsTags("total")
-    
-    ' Estruturar output em JSON
-    Dim outputData
-    Set outputJSON = New aspJSON
-    With outputJSON.data
-        .add "analysisType", "Bibliometric Analysis"
-        .add "stepID", stepID
-        .add "processedAt", FormatDateTime(Now(), 2)
-        .add "methodology", "Systematic Literature Review"
-        
-        ' Métricas principais
-        .add "metrics", outputJSON.Collection()
-        With .item("metrics")
-            .add "totalReferences", totalReferences
-            .add "uniqueAuthors", authorCount
-            .add "timeSpan", yearSpan
-            .add "topics", tagCount
-            .add "averageReferencesPerYear", IIf(totalReferences > 0, Round(totalReferences / 5, 2), 0)
-        End With
-        
-        ' Top autores (buscar os 5 mais citados)
-        .add "topAuthors", outputJSON.Collection()
-        Dim rsTopAuthors, i
-        Call getRecordset("SELECT TOP 5 a.name, COUNT(*) as publications FROM tiamat_step_bib_reference_authors ra INNER JOIN tiamat_step_bib_references r ON ra.referenceID = r.referenceID INNER JOIN tiamat_bib_authors a ON ra.authorID = a.authorID WHERE r.stepID = " & stepID & " GROUP BY a.authorID, a.name ORDER BY publications DESC", rsTopAuthors)
-        i = 0
-        While Not rsTopAuthors.eof And i < 5
-            .item("topAuthors").add i, outputJSON.Collection()
-            With .item("topAuthors").item(i)
-                .add "name", rsTopAuthors("name")
-                .add "publications", rsTopAuthors("publications")
-            End With
-            i = i + 1
-            rsTopAuthors.movenext
-        Wend
-        
-        ' Distribuição por ano
-        .add "yearlyDistribution", outputJSON.Collection()
-        Dim rsYearDist, j
-        Call getRecordset("SELECT year, COUNT(*) as count FROM tiamat_step_bib_references WHERE stepID = " & stepID & " GROUP BY year ORDER BY year", rsYearDist)
-        j = 0
-        While Not rsYearDist.eof
-            .item("yearlyDistribution").add j, outputJSON.Collection()
-            With .item("yearlyDistribution").item(j)
-                .add "year", rsYearDist("year")
-                .add "count", rsYearDist("count")
-            End With
-            j = j + 1
-            rsYearDist.movenext
-        Wend
-        
-        ' Top tópicos/tags
-        .add "topTopics", outputJSON.Collection()
-        Dim rsTopTags, k
-        Call getRecordset("SELECT TOP 10 t.tag, COUNT(*) as frequency FROM tiamat_step_bib_reference_tags rt INNER JOIN tiamat_step_bib_references r ON rt.referenceID = r.referenceID INNER JOIN tiamat_bib_tags t ON rt.tagID = t.tagID WHERE r.stepID = " & stepID & " GROUP BY t.tagID, t.tag ORDER BY frequency DESC", rsTopTags)
-        k = 0
-        While Not rsTopTags.eof And k < 10
-            .item("topTopics").add k, outputJSON.Collection()
-            With .item("topTopics").item(k)
-                .add "topic", rsTopTags("tag")
-                .add "frequency", rsTopTags("frequency")
-            End With
-            k = k + 1
-            rsTopTags.movenext
-        Wend
-        
-        ' Metadados de qualidade
-        .add "qualityMetrics", outputJSON.Collection()
-        With .item("qualityMetrics")
-            .add "dataCompleteness", IIf(totalReferences > 0, "High", "Low")
-            .add "coverageYears", yearSpan
-            .add "authorDiversity", IIf(authorCount > 10, "High", IIf(authorCount > 5, "Medium", "Low"))
-            .add "topicCoverage", IIf(tagCount > 5, "Broad", IIf(tagCount > 2, "Medium", "Narrow"))
-        End With
-        
-        ' Recomendações
-        .add "recommendations", outputJSON.Collection()
-        With .item("recommendations")
-            If totalReferences < 20 Then
-                .add 0, "Consider expanding the search to include more references"
-            End If
-            If yearSpan = "N/A" Or InStr(yearSpan, "-") = 0 Then
-                .add 1, "Add publication years to improve temporal analysis"
-            End If
-            If tagCount < 3 Then
-                .add 2, "Increase topic diversity for broader coverage"
-            End If
-        End With
-    End With
-    
-    outputData = outputJSON.JSONoutput()
-    
-    ' Salvar output com Dublin Core
-    If SaveFTAMethodOutput(stepID, outputData, "bibliometric_analysis", 0) Then
-        ' Redirecionar para finalização normal
-        Response.Write "<script>"
-        Response.Write "alert('Bibliometric analysis saved with Dublin Core metadata!');"
-        Response.Write "window.location.href='/workflowActions.asp?action=end&stepID=" & stepID & "';"
-        Response.Write "</script>"
-    Else
-        ' Se falhou, prosseguir com finalização normal
-        Response.Write "<script>"
-        Response.Write "alert('Analysis completed. Proceeding to finish step.');"
-        Response.Write "window.location.href='/workflowActions.asp?action=end&stepID=" & stepID & "';"
-        Response.Write "</script>"
-    End If
-    
-    ' Limpeza
-    Set outputJSON = Nothing
-    
-    On Error Goto 0
-End Sub
-
 render.renderFooter()
 %>

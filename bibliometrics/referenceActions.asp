@@ -148,7 +148,11 @@ Dim usuarios
 				call getRecordSet(SQL_CONSULTA_BIBLIOMETRICS_REFERENCE(Upload.Form("referenceID")), rs)
 				if not rs.eof then 'update
 					call ExecuteSQL(SQL_ATUALIZA_REFERENCE(Upload.Form("referenceID"), Upload.Form("title"), Upload.Form("year")))
-					referenceID = cint(Upload.Form("referenceID"))
+					If Upload.Form("referenceID") <> "" And IsNumeric(Upload.Form("referenceID")) Then
+						referenceID = CLng(Upload.Form("referenceID"))
+					Else
+						referenceID = 0
+					End If
 				else ' error
 					response.write "ERROR. Invalid ID!"
 				end if 
@@ -161,7 +165,13 @@ Dim usuarios
 				With objSP
 					.Parameters.Append .CreateParameter("RETORNO", adBigInt,adParamReturnValue)
 					.Parameters.Append .CreateParameter("@email",advarchar,adParamInput,150,Session("email"))
-					.Parameters.Append .CreateParameter("@stepID",adBigInt,adParamInput,8,cint(Upload.Form("stepID")))
+					Dim safeStepID
+						If Upload.Form("stepID") <> "" And IsNumeric(Upload.Form("stepID")) Then
+							safeStepID = CLng(Upload.Form("stepID"))
+						Else
+							safeStepID = 0
+						End If
+						.Parameters.Append .CreateParameter("@stepID",adBigInt,adParamInput,8,safeStepID)
 					.Parameters.Append .CreateParameter("@title",advarchar,adParamInput,500,Upload.Form("title"))
 					.Parameters.Append .CreateParameter("@year",advarchar,adParamInput,8,Upload.Form("year"))
 					.Execute
