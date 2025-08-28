@@ -1,112 +1,120 @@
 <!--#include virtual="/system.asp"-->
 <!--#include file="INC_SCENARIO.inc"-->
-
 <%
-' Processar ações dos cenários
-Dim action, stepID, scenarioID, name, scenario, url
+'=========================================
+' scenarioActions.asp - VERSAO FINAL CORRIGIDA
+'=========================================
 
-action = Request.QueryString("action")
-stepID = Request.Form("stepID")
-scenarioID = Request.Form("scenarioID")
-name = Request.Form("name")
-scenario = Request.Form("scenario")
+Dim action, stepID, scenarioID, name, scenario
 
-' URL padrão de retorno
-url = "index.asp?stepID=" & stepID
+' Pegar parametros de GET ou POST
+action = Request("action")  ' Pega de GET ou POST
+stepID = Request("stepID")
+scenarioID = Request("scenarioID")
+name = Request("name")
+scenario = Request("scenario")
 
+' Debug
+Response.Write "<!-- DEBUG: action=" & action & ", stepID=" & stepID & " -->" & vbCrLf
+
+' Processar acao
 Select Case LCase(action)
 
-Case "save"
-    ' Validar dados obrigatórios
-    If stepID = "" Or Not IsNumeric(stepID) Then
-        Response.Write "Error: Invalid step ID"
-        Response.End
-    End If
-    
-    If name = "" Then
-        Response.Write "Error: Scenario name is required"
-        Response.End
-    End If
-    
-    On Error Resume Next
-    
-    If scenarioID <> "" And IsNumeric(scenarioID) Then
-        ' Atualizar cenário existente
-        Dim updateSQL
-        updateSQL = SQL_ATUALIZA_SCENARIO(scenarioID, name, scenario)
+    Case "save"
+        ' Salvar cenario (criar ou atualizar)
+        name = Trim(name)
+        scenario = Trim(scenario)
         
-        If updateSQL <> "" Then
-            Call ExecuteSQL(updateSQL)
+        If name <> "" And scenario <> "" And stepID <> "" Then
+            On Error Resume Next
             
-            If Err.Number = 0 Then
-                Session("successMessage") = "Scenario updated successfully!"
+            If scenarioID <> "" And IsNumeric(scenarioID) Then
+                ' Atualizar cenario existente
+                Call ExecuteSQL(SQL_ATUALIZA_SCENARIO(scenarioID, name, scenario))
             Else
-                Session("errorMessage") = "Error updating scenario: " & Err.Description
-                Err.Clear
+                ' Criar novo cenario
+                Call ExecuteSQL(SQL_CRIA_SCENARIO(stepID, name, scenario))
             End If
+            
+            If Err.Number <> 0 Then
+                Response.Write "<script>alert('Erro: " & Replace(Err.Description, "'", "\'") & "'); history.back();</script>"
+                Response.End
+            End If
+            
+            On Error Goto 0
+        End If
+        
+        Response.Redirect "index.asp?stepID=" & stepID
+
+    Case "delete"
+        ' Deletar cenario
+        If scenarioID <> "" And IsNumeric(scenarioID) Then
+            On Error Resume Next
+            Call ExecuteSQL(SQL_DELETA_SCENARIO(scenarioID))
+            On Error Goto 0
+        End If
+        
+        Response.Redirect "index.asp?stepID=" & stepID
+
+    Case "finalize_scenarios", "end", "finalize"
+        ' Finalizar cenarios - CORRIGIDO
+        Response.Write "<!-- DEBUG: Finalizando cenarios para stepID=" & stepID & " -->" & vbCrLf
+        
+        If stepID <> "" And IsNumeric(stepID) Then
+            On Error Resume Next
+            
+            ' Verificar se tem cenarios
+            call getRecordSet("SELECT COUNT(*) as total FROM T_FTA_METHOD_SCENARIOS WHERE stepID = " & stepID, rs)
+            
+            If Err.Number <> 0 Then
+                Response.Write "<script>alert('Erro ao verificar cenários: " & Replace(Err.Description, "'", "\'") & "'); history.back();</script>"
+                Response.End
+            End If
+            
+            If Not rs.EOF Then
+                Dim totalScenarios
+                totalScenarios = rs("total")
+                Response.Write "<!-- DEBUG: Total de cenarios=" & totalScenarios & " -->" & vbCrLf
+                
+                If totalScenarios > 0 Then
+                    ' Finalizar step
+                    Response.Write "<!-- DEBUG: Chamando endStep(" & stepID & ") -->" & vbCrLf
+                    
+                    Call endStep(stepID)
+                    
+                    If Err.Number <> 0 Then
+                        Response.Write "<script>alert('Erro ao finalizar step: " & Replace(Err.Description, "'", "\'") & "'); history.back();</script>"
+                        Response.End
+                    Else
+                        Response.Write "<!-- DEBUG: Step finalizado com sucesso -->" & vbCrLf
+                        Response.Write "<script>" & vbCrLf
+                        Response.Write "alert('Cenários finalizados com sucesso!');" & vbCrLf
+                        Response.Write "window.location.href = '/workplace.asp';" & vbCrLf
+                        Response.Write "</script>" & vbCrLf
+                        Response.End
+                    End If
+                Else
+                    Response.Write "<script>" & vbCrLf
+                    Response.Write "alert('Por favor, crie pelo menos um cenário antes de finalizar.');" & vbCrLf
+                    Response.Write "window.location.href = 'index.asp?stepID=" & stepID & "';" & vbCrLf
+                    Response.Write "</script>" & vbCrLf
+                    Response.End
+                End If
+            Else
+                Response.Write "<script>alert('Erro: Não foi possível verificar cenários.'); history.back();</script>"
+                Response.End
+            End If
+            
+            On Error Goto 0
         Else
-            Session("errorMessage") = "Error generating update SQL"
+            Response.Write "<script>alert('Erro: StepID inválido.'); history.back();</script>"
+            Response.End
         End If
-    Else
-        ' Criar novo cenário
-        Dim createSQL
-        createSQL = SQL_CRIA_SCENARIO(stepID, name, scenario)
-        
-        If createSQL <> "" Then
-            Call ExecuteSQL(createSQL)
-            
-            If Err.Number = 0 Then
-                Session("successMessage") = "Scenario created successfully!"
-            Else
-                Session("errorMessage") = "Error creating scenario: " & Err.Description
-                Err.Clear
-            End If
-        Else
-            Session("errorMessage") = "Error generating create SQL"
-        End If
-    End If
-    
-    On Error Goto 0
 
-Case "delete"
-    ' Deletar cenário
-    scenarioID = Request.QueryString("scenarioID")
-    stepID = Request.QueryString("stepID")
-    
-    If scenarioID <> "" And IsNumeric(scenarioID) Then
-        On Error Resume Next
-        
-        Dim deleteSQL
-        deleteSQL = SQL_DELETE_SCENARIO(scenarioID)
-        
-        If deleteSQL <> "" Then
-            Call ExecuteSQL(deleteSQL)
-            
-            If Err.Number = 0 Then
-                Session("successMessage") = "Scenario deleted successfully!"
-            Else
-                Session("errorMessage") = "Error deleting scenario: " & Err.Description
-                Err.Clear
-            End If
-        End If
-        
-        On Error Goto 0
-    End If
-    
-    url = "index.asp?stepID=" & stepID
-
-Case "end"
-    ' Finalizar step
-    If stepID <> "" And IsNumeric(stepID) Then
-        Call endStep(stepID)
-        url = "/workplace.asp"
-    End If
-
-Case Else
-    Session("errorMessage") = "Invalid action: " & action
+    Case Else
+        ' Acao nao reconhecida
+        Response.Write "<!-- DEBUG: Acao nao reconhecida: " & action & " -->" & vbCrLf
+        Response.Redirect "index.asp?stepID=" & stepID
 
 End Select
-
-' Redirecionar
-Response.Redirect url
 %>

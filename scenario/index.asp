@@ -1,99 +1,52 @@
 <!--#include virtual="/system.asp"-->
 <!--#include virtual="/checkstep.asp"-->
 <!--#include file="INC_SCENARIO.inc"-->
-
 <%
 saveCurrentURL
-render.renderTitle()
 
-' Função auxiliar para contar palavras (CORRIGIDA)
-Function CountWords(text)
-    On Error Resume Next
-    
-    If IsNull(text) Or text = "" Then
-        CountWords = 0
-        Exit Function
-    End If
-    
-    ' Remove HTML tags básico
-    Dim cleanText
-    cleanText = CStr(text)
-    cleanText = Replace(cleanText, "<", " ")
-    cleanText = Replace(cleanText, ">", " ")
-    cleanText = Replace(cleanText, vbCrLf, " ")
-    cleanText = Replace(cleanText, vbLf, " ")
-    cleanText = Replace(cleanText, "  ", " ")
-    
-    cleanText = Trim(cleanText)
-    If cleanText = "" Then
-        CountWords = 0
-    Else
-        CountWords = UBound(Split(cleanText, " ")) + 1
-    End If
-    
-    On Error Goto 0
-End Function
-
-' Processar ações
-Dim action, stepID
+' Processar ação de finalização se vier por GET
+Dim action
 action = Request.QueryString("action")
-stepID = Request.QueryString("stepID")
 
-If action = "finalize_scenarios" And stepID <> "" Then
-    On Error Resume Next
-    Call ExecuteSQL("UPDATE tiamat_steps SET status = 4 WHERE stepID = " & stepID)
-    Response.Redirect("/workplace.asp")
-    Response.End
+If action = "finalize_scenarios" Then
+    Dim stepID
+    stepID = Request.QueryString("stepID")
+    
+    ' Verificar se tem cenários
+    call getRecordSet("SELECT COUNT(*) as total FROM T_FTA_METHOD_SCENARIOS WHERE stepID = " & stepID, rs)
+    
+    If Not rs.EOF Then
+        If rs("total") > 0 Then
+            ' Finalizar o step
+            Call endStep(stepID)
+            Response.Redirect "/workplace.asp"
+            Response.End
+        Else
+            ' Não tem cenários
+            Response.Write "<script>alert('Please create at least one scenario before finalizing.'); window.location.href='index.asp?stepID=" & stepID & "';</script>"
+            Response.End
+        End If
+    End If
 End If
 
+render.renderToBody()
 %>
 
 <div class="p-3">
 
 <%
-' Mostrar mensagens de sucesso/erro
-If Session("successMessage") <> "" Then
-    Response.Write "<div class='alert alert-success alert-dismissible fade show' role='alert'>"
-    Response.Write Session("successMessage")
-    Response.Write "<button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
-    Response.Write "</div>"
-    Session("successMessage") = ""
-End If
+' CORRIGIDO: Usar a funcao correta que existe no INC_SCENARIO.inc
+call getRecordSet(SQL_CONSULTA_SCENARIOS(request.querystring("stepID")), rs)
 
-If Session("errorMessage") <> "" Then
-    Response.Write "<div class='alert alert-danger alert-dismissible fade show' role='alert'>"
-    Response.Write Session("errorMessage")
-    Response.Write "<button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
-    Response.Write "</div>"
-    Session("errorMessage") = ""
-End If
+if rs.eof then
+%>
 
-' Consultar cenários
-On Error Resume Next
+<div class="alert alert-info text-center">
+  <h5>No scenarios found</h5>
+  <p>Please click on <b>Add Scenario</b> button to include the first scenario.</p>
+</div>
 
-dim rs
-Dim counter
-
-' Validar stepID antes de usar na query
-If Not IsEmpty(request.querystring("stepID")) And IsNumeric(request.querystring("stepID")) Then
-    call getRecordset(SQL_CONSULTA_SCENARIOS(request.querystring("stepID")), rs)
-    
-    ' Verificar se houve erro na consulta SQL
-    If Err.Number <> 0 Then
-        Response.Write "<div class='alert alert-danger'>Database error: " & Err.Description & "</div>"
-        Err.Clear
-        Set rs = Nothing
-    End If
-Else
-    Set rs = Nothing
-End If
-
-On Error Goto 0
-
-If rs Is Nothing Then
-    Response.Write "<div class='py-3'><div class='alert alert-danger'>Invalid step ID or database error.</div></div>"
-ElseIf rs.eof Then
-    Response.Write "<div class='py-3'><div class='alert alert-warning'> No Scenarios described yet. Please click on <b>Add Scenario</b> button to include the first scenario.</div></div>"
+<%
 Else
 %>
 
@@ -114,7 +67,7 @@ Else
 	%>
   <tr class="d-flex">
 		<td class="flex-grow-1"> 														
-			<a href="#" class="link-dark text-decoration-none" data-bs-toggle="modal" data-bs-target="#manageScenarioModal" data-title="Edit Scenario" data-url="manageScenario.asp?stepID=<%=request.querystring("stepID")%>&scenarioID=<%=rs("scenarioID")%>">
+			<a href="#" class="link-dark text-decoration-none" onclick="openScenarioEditor(<%=rs("scenarioID")%>)">
                 <strong><%=Server.HTMLEncode(rs("name"))%></strong>
             </a>
             <br><small class="text-muted">Scenario #<%=counter%></small>
@@ -153,17 +106,20 @@ end if
 
 </div>
 
-<!-- Botões de ação -->
+<!-- Botoes de acao CORRIGIDOS -->
 <nav class="navbar fixed-bottom navbar-light bg-light">
     <div class="container-fluid justify-content-center p-0">
 		<%if getStatusStep(request.querystring("stepID")) = STATE_ACTIVE then %>
-		<button class="btn btn-sm btn-primary m-1" type="button" data-bs-toggle="modal" data-bs-target="#manageScenarioModal" data-title="Add Scenario" data-url="manageScenario.asp?stepID=<%=request.queryString("stepID")%>"> 
+		<button class="btn btn-sm btn-primary m-1" type="button" onclick="openScenarioEditor()"> 
             <i class="bi bi-plus-square text-light"></i> Add Scenario
         </button>
         
 		<button class="btn btn-sm btn-secondary m-1" onclick="window.location.href='/stepsupportInformation.asp?stepID=<%=request.queryString("stepID")%>';"><i class="bi bi-journal-plus text-light"></i> Supporting Information</button>
 		
-        <button class="btn btn-sm btn-success m-1" onclick="if(confirm('This action will finalize all scenarios and complete the step. Continue?')) window.location.href='index.asp?action=finalize_scenarios&stepID=<%=request.queryString("stepID")%>';"><i class="bi bi-collection text-light"></i> Finalize Scenarios</button>
+        <!-- BOTÃO FINALIZAR CORRIGIDO -->
+        <button class="btn btn-sm btn-success m-1" type="button" onclick="finalizeScenarios()">
+            <i class="bi bi-collection text-light"></i> Finalize Scenarios
+        </button>
         
 		<%else%>
 		<button class="btn btn-sm btn-secondary m-1" onclick="window.location.href='/workplace.asp';"><i class="bi bi-arrow-left text-light"></i> Back to Workplace</button>
@@ -171,7 +127,7 @@ end if
 	</div>
 </nav>
 
-<!-- Modal para gestão de cenários -->
+<!-- Modal para gestao de cenarios -->
 <div class="modal fade" id="manageScenarioModal" tabindex="-1" aria-labelledby="manageScenarioModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -193,45 +149,155 @@ end if
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Configurar modal para carregar conteúdo dinamicamente
-document.addEventListener('DOMContentLoaded', function() {
-    var manageScenarioModal = document.getElementById('manageScenarioModal');
-    if (manageScenarioModal) {
-        manageScenarioModal.addEventListener('show.bs.modal', function(event) {
-            var button = event.relatedTarget;
-            var url = button.getAttribute('data-url');
-            var title = button.getAttribute('data-title');
-            
-            var modalTitle = manageScenarioModal.querySelector('.modal-title');
-            var modalBody = manageScenarioModal.querySelector('.modal-body');
-            
-            modalTitle.textContent = title;
-            modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-            
-            // Carregar conteúdo via AJAX
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.text();
-                })
-                .then(html => {
-                    modalBody.innerHTML = html;
-                })
-                .catch(error => {
-                    modalBody.innerHTML = '<div class="alert alert-danger">Error loading content: ' + error.message + '</div>';
-                });
-        });
+// Funcao para abrir o editor de cenarios
+function openScenarioEditor(scenarioID) {
+    var stepID = '<%=request.querystring("stepID")%>';
+    var modal = document.getElementById('manageScenarioModal');
+    var modalTitle = modal.querySelector('.modal-title');
+    var modalBody = modal.querySelector('.modal-body');
+    
+    // Definir titulo
+    modalTitle.textContent = scenarioID ? 'Edit Scenario' : 'Add Scenario';
+    
+    // Mostrar loading
+    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    
+    // Construir URL
+    var url = 'manageScenario.asp?stepID=' + stepID;
+    if (scenarioID) {
+        url += '&scenarioID=' + scenarioID;
     }
     
-    // Auto-dismiss alerts
+    console.log('Loading scenario editor from URL:', url);
+    
+    // Carregar conteudo via AJAX
+    fetch(url)
+        .then(response => {
+            console.log('Response status:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText + ' - URL: ' + url);
+            }
+            return response.text();
+        })
+        .then(html => {
+            console.log('Content loaded successfully, length:', html.length);
+            modalBody.innerHTML = html;
+            
+            // Inicializar TinyMCE se necessario
+            setTimeout(function() {
+                initializeTinyMCE();
+            }, 500);
+            
+            // Executar scripts que podem estar no HTML carregado
+            executeScriptsInModal(modalBody);
+        })
+        .catch(error => {
+            console.error('Error loading scenario editor:', error);
+            modalBody.innerHTML = '<div class="alert alert-danger">Error loading scenario editor: ' + error.message + '</div>';
+        });
+    
+    // Mostrar modal
+    var bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+}
+
+// FUNÇÃO CORRIGIDA PARA FINALIZAR CENÁRIOS
+function finalizeScenarios() {
+    console.log('Finalize scenarios button clicked');
+    
+    if (confirm('This action will finalize all scenarios and complete the step. Continue?')) {
+        console.log('User confirmed - finalizing scenarios');
+        
+        // Método 1: Enviar por GET para scenarioActions
+        var stepID = '<%=request.querystring("stepID")%>';
+        var url = 'scenarioActions.asp?action=finalize_scenarios&stepID=' + stepID;
+        
+        console.log('Redirecting to: ' + url);
+        window.location.href = url;
+        
+        // Método alternativo: Se não redirecionar em 2 segundos, tentar POST
+        setTimeout(function() {
+            console.log('Trying alternative POST method...');
+            
+            // Criar form para POST
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'scenarioActions.asp';
+            
+            var actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'finalize_scenarios';
+            form.appendChild(actionInput);
+            
+            var stepInput = document.createElement('input');
+            stepInput.type = 'hidden';
+            stepInput.name = 'stepID';
+            stepInput.value = stepID;
+            form.appendChild(stepInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }, 2000);
+    }
+}
+
+// Funcao para inicializar TinyMCE
+function initializeTinyMCE() {
+    if (typeof tinymce !== 'undefined') {
+        // Remover instancias existentes
+        tinymce.remove('#scenario');
+        
+        tinymce.init({
+            selector: '#scenario',
+            height: 340,
+            menubar: false,
+            plugins: [
+                'advlist autolink lists link image charmap print preview anchor',
+                'searchreplace visualblocks code fullscreen',
+                'table contextmenu paste code'
+            ],
+            toolbar: 'undo redo | insert | styleselect formatselect fontselect fontsizeselect bold italic | alignleft aligncenter alignright alignjustify | numlist bullist | table link image',
+            paste_data_images: true,
+            setup: function(editor) {
+                editor.on('init', function() {
+                    console.log('TinyMCE initialized successfully in modal');
+                });
+            }
+        });
+    } else {
+        console.log('TinyMCE not available');
+    }
+}
+
+// Funcao para executar scripts no conteudo carregado via AJAX
+function executeScriptsInModal(container) {
+    var scripts = container.querySelectorAll('script');
+    scripts.forEach(function(script) {
+        try {
+            eval(script.innerHTML);
+        } catch (error) {
+            console.error('Error executing script in modal:', error);
+        }
+    });
+}
+
+// Auto-dismiss alerts
+document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         var alerts = document.querySelectorAll('.alert');
         alerts.forEach(function(alert) {
-            var alertInstance = new bootstrap.Alert(alert);
-            alertInstance.close();
+            if (alert.classList.contains('alert-info') || alert.classList.contains('alert-success')) {
+                var alertInstance = new bootstrap.Alert(alert);
+                alertInstance.close();
+            }
         });
     }, 5000);
+    
+    console.log('Scenario index loaded - finalize button ready');
 });
 </script>
+
+<%
+render.renderFromBody()
+%>

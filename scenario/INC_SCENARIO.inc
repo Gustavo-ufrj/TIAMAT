@@ -1,92 +1,89 @@
 <%
-'
-' INC_SCENARIO.inc - Versão Final Corrigida
-' Baseado na estrutura real da tabela T_FTA_METHOD_SCENARIOS
-' Colunas: scenarioID, stepID, name, description, scenario
-' SEM coluna de data (por isso o erro original)
-'
+'==================================================
+' INC_SCENARIO.inc - VERSAO SIMPLIFICADA
+' Funcoes SQL para o modulo Scenario
+' Tabela correta: T_FTA_METHOD_SCENARIOS (com S)
+'==================================================
+
+' ========== FUNCOES SQL BASICAS ==========
 
 Function SQL_CONSULTA_SCENARIOS(stepID)
-    On Error Resume Next
-    If Not IsNumeric(stepID) Or stepID = "" Then
-        SQL_CONSULTA_SCENARIOS = ""
-        Exit Function
-    End If
-    
-    SQL_CONSULTA_SCENARIOS = "SELECT scenarioID, stepID, name, description, scenario FROM T_FTA_METHOD_SCENARIOS WHERE stepID = " & stepID & " ORDER BY scenarioID DESC"
-    
-    On Error Goto 0
+    SQL_CONSULTA_SCENARIOS = "SELECT scenarioID, name, description, scenario " & _
+                             "FROM T_FTA_METHOD_SCENARIOS " & _
+                             "WHERE stepID = " & stepID & " " & _
+                             "ORDER BY scenarioID"
 End Function
 
 Function SQL_CONSULTA_SCENARIOS_BY_SCENARIO_ID(scenarioID)
-    On Error Resume Next
-    If Not IsNumeric(scenarioID) Or scenarioID = "" Then
-        SQL_CONSULTA_SCENARIOS_BY_SCENARIO_ID = ""
-        Exit Function
-    End If
-    
-    SQL_CONSULTA_SCENARIOS_BY_SCENARIO_ID = "SELECT scenarioID, stepID, name, description, scenario FROM T_FTA_METHOD_SCENARIOS WHERE scenarioID = " & scenarioID
-    
-    On Error Goto 0
+    SQL_CONSULTA_SCENARIOS_BY_SCENARIO_ID = "SELECT scenarioID, stepID, name, description, scenario " & _
+                                            "FROM T_FTA_METHOD_SCENARIOS " & _
+                                            "WHERE scenarioID = " & scenarioID
 End Function
 
 Function SQL_CRIA_SCENARIO(stepID, name, scenario)
-    On Error Resume Next
-    If Not IsNumeric(stepID) Or stepID = "" Then
-        SQL_CRIA_SCENARIO = ""
-        Exit Function
-    End If
+    ' Escapar aspas simples
+    name = Replace(name, "'", "''")
+    scenario = Replace(scenario, "'", "''")
     
-    Dim safeName, safeScenario
-    safeName = Replace(CStr(name), "'", "''")
-    safeScenario = Replace(CStr(scenario), "'", "''")
-    
-    ' CORREÇÃO: Sintaxe correta do INSERT com description vazia
-    SQL_CRIA_SCENARIO = "INSERT INTO T_FTA_METHOD_SCENARIOS (stepID, name, description, scenario) VALUES (" & stepID & ", '" & safeName & "', '', '" & safeScenario & "')"
-    
-    On Error Goto 0
+    SQL_CRIA_SCENARIO = "INSERT INTO T_FTA_METHOD_SCENARIOS (stepID, name, scenario, description) " & _
+                        "VALUES (" & stepID & ", '" & name & "', '" & scenario & "', '')"
 End Function
 
 Function SQL_ATUALIZA_SCENARIO(scenarioID, name, scenario)
-    On Error Resume Next
-    If Not IsNumeric(scenarioID) Or scenarioID = "" Then
-        SQL_ATUALIZA_SCENARIO = ""
-        Exit Function
-    End If
+    ' Escapar aspas simples
+    name = Replace(name, "'", "''")
+    scenario = Replace(scenario, "'", "''")
     
-    Dim safeName, safeScenario
-    safeName = Replace(CStr(name), "'", "''")
-    safeScenario = Replace(CStr(scenario), "'", "''")
-    
-    SQL_ATUALIZA_SCENARIO = "UPDATE T_FTA_METHOD_SCENARIOS SET name = '" & safeName & "', scenario = '" & safeScenario & "' WHERE scenarioID = " & scenarioID
-    On Error Goto 0
+    SQL_ATUALIZA_SCENARIO = "UPDATE T_FTA_METHOD_SCENARIOS " & _
+                           "SET name = '" & name & "', " & _
+                           "scenario = '" & scenario & "' " & _
+                           "WHERE scenarioID = " & scenarioID
 End Function
 
-Function SQL_DELETE_SCENARIO(scenarioID)
-    On Error Resume Next
-    If Not IsNumeric(scenarioID) Or scenarioID = "" Then
-        SQL_DELETE_SCENARIO = ""
-        Exit Function
-    End If
-    SQL_DELETE_SCENARIO = "DELETE FROM T_FTA_METHOD_SCENARIOS WHERE scenarioID = " & scenarioID
-    On Error Goto 0
+Function SQL_DELETA_SCENARIO(scenarioID)
+    SQL_DELETA_SCENARIO = "DELETE FROM T_FTA_METHOD_SCENARIOS WHERE scenarioID = " & scenarioID
 End Function
 
-Function ValidateScenarioInput(input)
+' ========== FUNCAO AUXILIAR ==========
+
+Function CountWords(text)
     On Error Resume Next
-    If IsNull(input) Then
-        ValidateScenarioInput = ""
+    
+    If IsNull(text) Or text = "" Then
+        CountWords = 0
         Exit Function
     End If
     
-    Dim cleanInput
-    cleanInput = CStr(input)
-    cleanInput = Replace(cleanInput, "'", "''")
-    cleanInput = Replace(cleanInput, """", """""")
-    cleanInput = Replace(cleanInput, ";", "")
-    cleanInput = Replace(cleanInput, "--", "")
+    ' Remove tags HTML basico
+    text = Replace(text, "<", " <")
+    text = Replace(text, ">", "> ")
     
-    ValidateScenarioInput = cleanInput
+    Dim pos1, pos2
+    Do While InStr(text, "<") > 0
+        pos1 = InStr(text, "<")
+        pos2 = InStr(pos1, text, ">")
+        If pos2 > pos1 Then
+            text = Left(text, pos1 - 1) & " " & Mid(text, pos2 + 1)
+        Else
+            Exit Do
+        End If
+    Loop
+    
+    ' Limpar espacos multiplos
+    Do While InStr(text, "  ") > 0
+        text = Replace(text, "  ", " ")
+    Loop
+    
+    ' Contar palavras
+    text = Trim(text)
+    If text = "" Then
+        CountWords = 0
+    Else
+        Dim words
+        words = Split(text, " ")
+        CountWords = UBound(words) + 1
+    End If
+    
     On Error Goto 0
 End Function
 
