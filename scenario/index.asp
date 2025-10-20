@@ -106,12 +106,17 @@ end if
 
 </div>
 
-<!-- Botoes de acao CORRIGIDOS -->
+<!-- Botoes de acao CORRIGIDOS COM VIEW DC -->
 <nav class="navbar fixed-bottom navbar-light bg-light">
     <div class="container-fluid justify-content-center p-0">
 		<%if getStatusStep(request.querystring("stepID")) = STATE_ACTIVE then %>
 		<button class="btn btn-sm btn-primary m-1" type="button" onclick="openScenarioEditor()"> 
             <i class="bi bi-plus-square text-light"></i> Add Scenario
+        </button>
+        
+        <!-- BOTÃO VIEW DC NOVO -->
+        <button class="btn btn-sm btn-info m-1" type="button" onclick="verDublinCore()">
+            <i class="bi bi-eye text-light"></i> View DC
         </button>
         
 		<button class="btn btn-sm btn-secondary m-1" onclick="window.location.href='/stepsupportInformation.asp?stepID=<%=request.queryString("stepID")%>';"><i class="bi bi-journal-plus text-light"></i> Supporting Information</button>
@@ -145,6 +150,20 @@ end if
     </div>
   </div>
 </div>
+
+<!-- CSS para o botão View DC -->
+<style>
+.btn-info {
+    background: linear-gradient(45deg, #17a2b8, #117a8b) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -199,6 +218,14 @@ function openScenarioEditor(scenarioID) {
     // Mostrar modal
     var bootstrapModal = new bootstrap.Modal(modal);
     bootstrapModal.show();
+}
+
+// FUNÇÃO PARA ABRIR VIEW DC - NOVA
+function verDublinCore() {
+    var popup = window.open('dcDataScenarios.asp?stepID=<%=request.querystring("stepID")%>', 
+                           'DublinCoreData', 
+                           'width=1200,height=800,scrollbars=yes,resizable=yes');
+    popup.focus();
 }
 
 // FUNÇÃO CORRIGIDA PARA FINALIZAR CENÁRIOS
