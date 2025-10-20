@@ -3,81 +3,55 @@
 <!--#include file="INC_ROADMAP.inc"-->
 
 <%
-
-
-	Dim usuarios
-	dim sql_consulta, retorno
-	Dim action
-	
-			
-	action = Request.Querystring("action")
-	roadmapID = Request.Querystring("roadmapID")
-
-	Dim url
-	url= "index.asp?stepID="+roadmapID		
-	
-	select case action
-	
+Dim usuarios
+dim sql_consulta, retorno
+Dim action
 		
+action = Request.Querystring("action")
+roadmapID = Request.Querystring("roadmapID")
 
-	case "new"
+Dim url
+url= "index.asp?stepID="+roadmapID		
+
+select case action
+
+case "new"
+	set d = server.createObject("scripting.dictionary")
+
+	if request.form("date") <> "" and request.form("event") <> "" then
 		
+		Set cnn = getConnection
+		Call chamaSP(True, objSP, "SP_CREATE_FTA_METHOD_ROADMAP_EVENT",cnn)
+		With objSP
+			.Parameters.Append .CreateParameter("RETORNO", adBigInt,adParamReturnValue)
+			' CORREÇÃO: Usar CLng ao invés de CInt para IDs grandes
+			.Parameters.Append .CreateParameter("@roadmapID",adBigInt,adParamInput,8,CLng(roadmapID))
+			.Parameters.Append .CreateParameter("@event",advarchar,adParamInput,300,request.form("event"))
+			.Parameters.Append .CreateParameter("@d",adDBTimeStamp,adParamInput, ,cdate(request.form("date")+"-01-01"))
+			.Execute
 
-		set d = server.createObject("scripting.dictionary")
+			eventID = .Parameters("RETORNO")
 
-			if request.form("date") <> "" and request.form("event") <> "" then
-				
-				Set cnn = getConnection
-				Call chamaSP(True, objSP, "SP_CREATE_FTA_METHOD_ROADMAP_EVENT",cnn)
-				With objSP
-					.Parameters.Append .CreateParameter("RETORNO", adBigInt,adParamReturnValue)
-					.Parameters.Append .CreateParameter("@roadmapID",adBigInt,adParamInput,8,cint(roadmapID))
-					.Parameters.Append .CreateParameter("@event",advarchar,adParamInput,300,request.form("event"))
-					.Parameters.Append .CreateParameter("@d",adDBTimeStamp,adParamInput, ,cdate(request.form("date")+"-01-01"))
-					.Execute
+		End With
 
-				eventID = .Parameters("RETORNO")
+		Call chamaSP(False, objSP, Null, Null)
+		dispose(cnn)
+	end if 
 
-				End With
+case "update"
+	set d = server.createObject("scripting.dictionary")
 
-				Call chamaSP(False, objSP, Null, Null)
-				dispose(cnn)
-					
-			
-			end if 
-
-		
-		
-		
-		
-		
-	case "update"
-	
-		set d = server.createObject("scripting.dictionary")
-
-		if request.form("date") <> "" and request.form("event") <> "" then
-
+	if request.form("date") <> "" and request.form("event") <> "" then
 		' Salvar
-				
-			call ExecuteSQL(SQL_ATUALIZA_ROADMAP_EVENT(request.form("eventID"),request.form("date"), request.form("event")))
-			d.add "Result", "OK"
-		
-		end if 
-		
-				
+		call ExecuteSQL(SQL_ATUALIZA_ROADMAP_EVENT(request.form("eventID"),request.form("date"), request.form("event")))
+		d.add "Result", "OK"
+	end if 
 
-	case "delete"
+case "delete"
+	call ExecuteSQL(SQL_DELETE_ROADMAP_EVENT(request.Querystring("eventID")))
 
-		
-		call ExecuteSQL(SQL_DELETE_ROADMAP_EVENT(request.Querystring("eventID")))
-
-
-		
-	end select
-	
-	
+end select
 %>
 <script>
 top.location.href="<%=url%>"
 </script>
-
