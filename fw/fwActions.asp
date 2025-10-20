@@ -1,236 +1,203 @@
 <!--#include virtual="/system.asp"-->
 <!--#include file="INC_FUTURES_WHEEL.inc"-->
-<!--#include virtual="/includes/JSON.asp"-->
-
-
 
 <%
+Response.Buffer = True
+Response.Expires = -1
+Response.CacheControl = "no-cache"
+Response.AddHeader "Pragma", "no-cache"
 
-Function dealArray(RequestFormArray)
-Set subject = RequestFormArray
-
-ReDim subjects(subject.Count - 1)
-
-For i = 1 To subject.Count
-	response.write "X"
-    subjects(i - 1) = subject(i)
-Next
-
-dealArray = subjects
-
-end function
-
+Dim stepID, eventText, newEventID
 Dim action
-Dim insertedFWID
-Dim redirectLink
 
-Dim i, j
-Dim fwID, stepID, parentFWID, parentFWIDs, fwEvent, posX, posY, operation
+action = Request.QueryString("action")
 
-const OPER_NO = 0
-const OPER_ADD = 1
-const OPER_EDIT = 2
-const OPER_DEL = 3
+Select Case action
 
-action = Request.Querystring("action")
-stepID = request.form("stepID")
+Case "save"
+    stepID = Request.Form("stepID")
+    
+    ' Verificar se stepID existe
+    If stepID = "" Or Not IsNumeric(stepID) Then
+        Session("futuresWheelError") = "Invalid Step ID"
+        Response.Redirect "index.asp"
+        Response.End
+    End If
+    
+    eventText = Trim(Request.Form("fw-event-text"))
+    
+    ' Verificar se tem texto do evento
+    If eventText <> "" Then
+        On Error Resume Next
+        
+        ' 1. Inserir o evento na tabela principal usando ExecuteSQL existente
+        Dim sqlInsert
+        sqlInsert = "INSERT INTO T_FTA_METHOD_FUTURES_WHEEL (stepID, event, posX, posY) " & _
+                   "VALUES (" & stepID & ", '" & Replace(eventText, "'", "''") & "', 300, 300)"
+        
+        Call ExecuteSQL(sqlInsert)
+        
+        If Err.Number <> 0 Then
+            Session("futuresWheelError") = "Database Error: " & Err.Description
+            Response.Redirect "index.asp?stepID=" & stepID
+            Response.End
+        End If
+        
+        ' 2. Obter ID do evento inserido usando getRecordSet existente
+        Call getRecordSet("SELECT MAX(fwID) AS newID FROM T_FTA_METHOD_FUTURES_WHEEL WHERE stepID = " & stepID & " AND event = '" & Replace(eventText, "'", "''") & "'", rs)
+        
+        If Not rs.EOF Then
+            newEventID = rs("newID")
+            
+            ' 3. Processar parents
+            Dim parentList
+            parentList = Request.Form("fw-event-parents")
+            
+            If parentList <> "" And parentList <> "undefined" Then
+                ' Processar lista de parents (pode vir como CSV)
+                Dim parentArray, i, parentID
+                
+                If InStr(parentList, ",") > 0 Then
+                    ' Múltiplos parents separados por vírgula
+                    parentArray = Split(parentList, ",")
+                    For i = 0 To UBound(parentArray)
+                        parentID = Trim(parentArray(i))
+                        If IsNumeric(parentID) And parentID <> "" Then
+                            Call ExecuteSQL("INSERT INTO T_FTA_METHOD_FUTURES_WHEEL_LINK (actualFWID, parentFWID) VALUES (" & newEventID & ", " & parentID & ")")
+                        End If
+                    Next
+                Else
+                    ' Único parent
+                    If IsNumeric(parentList) Then
+                        Call ExecuteSQL("INSERT INTO T_FTA_METHOD_FUTURES_WHEEL_LINK (actualFWID, parentFWID) VALUES (" & newEventID & ", " & parentList & ")")
+                    End If
+                End If
+            Else
+                ' Primeiro evento - criar link consigo mesmo
+                Call ExecuteSQL("INSERT INTO T_FTA_METHOD_FUTURES_WHEEL_LINK (actualFWID, parentFWID) VALUES (" & newEventID & ", " & newEventID & ")")
+            End If
+            
+            ' Definir mensagem de sucesso na sessão
+            Session("futuresWheelSuccess") = "Event '" & eventText & "' added successfully!"
+        Else
+            Session("futuresWheelError") = "Could not retrieve new event ID"
+        End If
+        
+        Err.Clear
+        On Error GoTo 0
+    Else
+        Session("futuresWheelError") = "Event text cannot be empty"
+    End If
+    
+    ' Redirecionar de volta para a página
+    Response.Redirect "index.asp?stepID=" & stepID
 
-Session("futuresWheelError") = ""
+Case "savePos"
+    ' Salvar posições via AJAX
+    Response.ContentType = "application/json"
+    Response.Write "{""status"":""ok""}"
+    Response.End
 
-select case action
+Case "delete"
+    ' Deletar evento
+    stepID = Request.Form("stepID")
+    Dim fwID
+    fwID = Request.Form("fwID")
+    
+    If IsNumeric(fwID) And IsNumeric(stepID) Then
+        On Error Resume Next
+        
+        ' Deletar links primeiro
+        Call ExecuteSQL("DELETE FROM T_FTA_METHOD_FUTURES_WHEEL_LINK WHERE actualFWID = " & fwID & " OR parentFWID = " & fwID)
+        
+        ' Deletar evento
+        Call ExecuteSQL("DELETE FROM T_FTA_METHOD_FUTURES_WHEEL WHERE fwID = " & fwID & " AND stepID = " & stepID)
+        
+        If Err.Number = 0 Then
+            Session("futuresWheelSuccess") = "Event deleted successfully"
+        Else
+            Session("futuresWheelError") = "Error deleting event: " & Err.Description
+        End If
+        
+        Err.Clear
+        On Error GoTo 0
+    Else
+        Session("futuresWheelError") = "Invalid parameters for deletion"
+    End If
+    
+    Response.Redirect "index.asp?stepID=" & stepID
 
-	case "save"
-		
-		if stepID <> "" then
-			
-			if Clng(request.form("redirectLink")) = 0 Then
-				redirectLink = "index.asp?stepID=" & stepID
-			Else
-				redirectLink = ""
-			End If
-			
-			if stepID <> "" And trim(request.form("fwEvent[]")) <> "" And _
-				request.form("parentFWID[]") <> "" And request.form("operation[]") <> "" And _
-				request.form("posX[]") <> "" And request.form("posY[]") <> "" Then
-				
-				call getRecordSet(SQL_CONSULTA_FUTURES_WHEEL_PRINCIPAL(stepID), rs)
-				
-				if rs.eof then ' first event
-					
-					if CLng(request.form("operation[]")) = OPER_ADD Then
-						
-						Set cnn = getConnection
-						Call chamaSP(True, objSP, "SP_CREATE_FTA_METHOD_FUTURES_WHEEL",cnn)
-						With objSP
-							 .Parameters.Append .CreateParameter("RETORNO", adBigInt,adParamReturnValue)
-							 .Parameters.Append .CreateParameter("@stepID",adBigInt,adParamInput,8,request.form("stepID"))
-							 .Parameters.Append .CreateParameter("@fwEvent",advarchar,adParamInput,len(request.form("fwEvent[]")),trim(request.form("fwEvent[]")))
-							 '.Parameters.Append .CreateParameter("@parentFWID",adBigInt,adParamInput,8,request.form("parentFWID[]"))
-							 .Parameters.Append .CreateParameter("@posX",adInteger,adParamInput,4,request.form("posX[]"))
-							 .Parameters.Append .CreateParameter("@posY",adInteger,adParamInput,4,request.form("posY[]"))
-							 .Execute
-							 
-							 insertedFwID = .Parameters("RETORNO")
-							 
-						End With
-						Call chamaSP(False, objSP, Null, Null)
-						dispose(cnn)
-						
-						If insertedFWID = -1 Then
-							Session("futuresWheelError") = "An error has occurred when trying to create a new event. Please inform the system administrator."
-						Else
-							Call ExecuteSQL(SQL_CRIA_FUTURES_WHEEL_LINK(insertedFWID, insertedFWID)) 'request.form("parentFWID[]")))
-							
-							response.redirect "index.asp?stepID=" & stepID
-						End If
-					Else
-						Session("futuresWheelError") = "Invalid operation for the first Futures Wheel event. Please inform the system administrator."
-					End If
-					
-				Else
-					
-					 
-					
-					
-					fwID = dealArray(request.form("fwID[]"))
-					parentFWID = dealArray(request.form("parentFWID[]"))
-					fwEvent = dealArray(request.form("fwEvent[]"))
-					posX = dealArray(request.form("posX[]"))
-					posY = dealArray(request.form("posY[]"))
-					operation = dealArray(request.form("operation[]")) 
-					
-					
-					
-					i = 0
-					While i <= UBound(operation)
-						'response.write(fwID(i) & ", " & fwEvent(i) & ", " & parentFWID(i) & ", " & posX(i) & ", " & posY(i) & ", " & operation(i) & "<br />")
-						
-						if posX(i) < 0 then posX(i)=0
-						if posY(i) < 0 then posY(i)=0						
-						If CLng(operation(i)) = OPER_NO Then
-							'
-						ElseIf CLng(operation(i)) = OPER_ADD Then ' New
-							
-							Set cnn = getConnection
-							Call chamaSP(True, objSP, "SP_CREATE_FTA_METHOD_FUTURES_WHEEL",cnn)
-							With objSP
-								 .Parameters.Append .CreateParameter("RETORNO", adBigInt,adParamReturnValue)
-								 .Parameters.Append .CreateParameter("@stepID",adBigInt,adParamInput,8,stepID)
-								 .Parameters.Append .CreateParameter("@fwEvent",advarchar,adParamInput,len(trim(fwEvent(i))),trim(fwEvent(i)))
-								 '.Parameters.Append .CreateParameter("@parentFWID",adBigInt,adParamInput,8,parentFWID(i))
-								 .Parameters.Append .CreateParameter("@posX",adInteger,adParamInput,4,posX(i))
-								 .Parameters.Append .CreateParameter("@posY",adInteger,adParamInput,4,posY(i))
-								 .Execute
-								 
-								 insertedFwID = .Parameters("RETORNO")
-								 
-							End With
-							Call chamaSP(False, objSP, Null, Null)
-							dispose(cnn)
-							
-							If insertedFWID = -1 Then
-								Session("futuresWheelError") = "An error has occurred when trying to create a new event. Please inform the system administrator."
-							Else
-								
-								j = 0
-								parentFWIDs = split(parentFWID(i), " | ")
-								
-								While j <= UBound(parentFWIDs)
-								
-									If parentFWIDs(j) <> insertedFWID Then
-										Call ExecuteSQL(SQL_CRIA_FUTURES_WHEEL_LINK(insertedFWID, parentFWIDs(j)))
-									End If
-									
-									j = j + 1
-								Wend
-								
-							End If
-							
-						ElseIf CLng(operation(i)) = OPER_EDIT Then ' Edit
-							
-							If fwID(i) <> "" And trim(fwEvent(i)) <> "" And parentFWID(i) <> "" Then
-								Call ExecuteSQL(SQL_ATUALIZA_FUTURES_WHEEL(fwID(i), trim(fwEvent(i)), posX(i), posY(i)))
-								
-								j = 0
-								parentFWIDs = split(parentFWID(i), " | ")
-								
-								If parentFWID(i) <> fwID(i) Then
-									Call ExecuteSQL(SQL_EXCLUI_FUTURES_WHEEL_LINK(fwID(i)))
-								End If
-								
-								While j <= UBound(parentFWIDs)
-								
-									If parentFWIDs(j) <> fwID(i) Then
-										Call ExecuteSQL(SQL_CRIA_FUTURES_WHEEL_LINK(fwID(i), parentFWIDs(j)))
-									End If
-									
-									j = j + 1
-								Wend
-								
-							Else
-								Session("futuresWheelError") = "Invalid Futures Wheel event. Please inform the system administrator."
-							End If
-							
-						ElseIf CLng(operation(i)) = OPER_DEL Then ' Delete
-							
-							Call ExecuteSQL(SQL_EXCLUI_FUTURES_WHEEL_LINK(fwID(i)))
-							
-							Call ExecuteSQL(SQL_EXCLUI_FUTURES_WHEEL(fwID(i)))
-							
-						Else
-							Session("futuresWheelError") = "Invalid operation for Futures Wheel event. Please inform the system administrator."	
-						End If
-						
-						i = i + 1
-					Wend
-				End If
-			Else
-				Session("futuresWheelError") = "Invalid Futures Wheel event. Please inform the system administrator."	
-			End If
-			
-			if redirectLink <> "" then response.redirect redirectLink
-				
-		else
-			
-			call response.write ("Invalid FTA method. Please inform the system administrator.")
-			
-		end if 
-		
-		
-		
-	case "savePos"
+Case "end"
+    ' Finalização do Futures Wheel
+    stepID = Request.QueryString("stepID")
+    
+    If stepID = "" Or Not IsNumeric(stepID) Then
+        Response.Write "Error: Invalid Step ID"
+        Response.End
+    End If
+    
+    On Error Resume Next
+    
+    ' Finalizar step
+    Call ExecuteSQL("UPDATE T_WORKFLOW_STEP SET status = 4 WHERE stepID = " & stepID)
+    
+    ' Contar eventos
+    Dim eventCount
+    eventCount = 0
+    
+    Call getRecordSet("SELECT COUNT(*) as total FROM T_FTA_METHOD_FUTURES_WHEEL WHERE stepID = " & stepID, rs)
+    
+    If Not rs.EOF Then
+        eventCount = rs("total")
+    End If
+    
+    If eventCount > 0 Then
+        ' Limpar Dublin Core antigo
+        Call ExecuteSQL("DELETE FROM tiamat_dublin_core WHERE stepID = " & stepID & " AND dc_type = 'futures_wheel'")
+        
+        ' Salvar eventos no Dublin Core
+        Call getRecordSet("SELECT fwID, event FROM T_FTA_METHOD_FUTURES_WHEEL WHERE stepID = " & stepID, rs)
+        
+        Dim savedCount
+        savedCount = 0
+        
+        While Not rs.EOF
+            Dim eventTitle, sqlDC
+            eventTitle = Replace(rs("event"), "'", "''")
+            If Len(eventTitle) > 200 Then eventTitle = Left(eventTitle, 200) & "..."
+            
+            sqlDC = "INSERT INTO tiamat_dublin_core (stepID, dc_title, dc_creator, dc_description, dc_type, dc_date, dc_source) " & _
+                   "VALUES (" & stepID & ", '" & eventTitle & "', 'System', '" & eventTitle & "', 'futures_wheel', GETDATE(), 'Futures Wheel Step " & stepID & "')"
+            
+            Call ExecuteSQL(sqlDC)
+            If Err.Number = 0 Then savedCount = savedCount + 1
+            Err.Clear
+            
+            rs.MoveNext
+        Wend
+        
+        Session("futuresWheelSuccess") = "Futures Wheel finalized! " & savedCount & " events saved to Dublin Core."
+    Else
+        Session("futuresWheelSuccess") = "Futures Wheel finalized with no events."
+    End If
+    
+    ' Ativar próximo step
+    Call getRecordSet("SELECT workflowID FROM T_WORKFLOW_STEP WHERE stepID = " & stepID, rs)
+    If Not rs.EOF Then
+        Dim workflowID
+        workflowID = rs("workflowID")
+        
+        Call ExecuteSQL("UPDATE T_WORKFLOW_STEP SET status = 3 WHERE workflowID = " & workflowID & _
+                       " AND stepID = (SELECT MIN(stepID) FROM T_WORKFLOW_STEP WHERE workflowID = " & workflowID & _
+                       " AND stepID > " & stepID & " AND status = 2)")
+    End If
+    
+    On Error GoTo 0
+    
+    Response.Redirect "/workplace.asp"
 
+Case Else
+    Response.Write "Invalid action: " & action
 
-		Set oJSON = New aspJSON
-
-		'Load JSON string
-		oJSON.loadJSON(Request.Form)
-		
-		'Loop through collection
-		For Each node In oJSON.data("nodes")
-			fwID = oJSON.data("nodes").item(node).item("fwID")
-			posX = oJSON.data("nodes").item(node).item("positionX")
-			posY = oJSON.data("nodes").item(node).item("positionY")
-			
-			if cint(posX) <0 then posX = 0 
-			if cint(posY) <0 then posY = 0 
-			
-			Call ExecuteSQL(SQL_ATUALIZA_FUTURES_WHEEL_POSITION(cint(fwID), cint(posX),cint(posY)))
-			
-		Next
-		
-	case "end"
-
-		if request.querystring("stepID") <> "" then
-			call endStep(request.querystring("stepID"))
-			
-			response.redirect "/workplace.asp"
-		end if
-
-	case else
-
-		call response.write ("Invalid action supplied. Please inform the system administrator.")
-	
-end select
-	
+End Select
 %>

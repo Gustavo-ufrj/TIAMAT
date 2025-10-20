@@ -1,4 +1,5 @@
 <%
+' Funções SQL para o Futures Wheel
 
 function SQL_CONSULTA_FUTURES_WHEEL_PRINCIPAL(stepID)
 	SQL_CONSULTA_FUTURES_WHEEL_PRINCIPAL = "SELECT fw.*, fwl.parentFWID " & vbCrLf & _
@@ -33,7 +34,7 @@ end function
 
 function SQL_ATUALIZA_FUTURES_WHEEL(fwID, fwEvent, posX, posY)
 	SQL_ATUALIZA_FUTURES_WHEEL = "UPDATE T_FTA_METHOD_FUTURES_WHEEL SET " & vbCrLf & _
-								"event = '" & fwEvent & "', "& vbCrLf & _
+								"event = '" & Replace(fwEvent, "'", "''") & "', "& vbCrLf & _
 								"posX = '" & posX & "', " & vbCrLf & _
 								"posY = '" & posY & "' " & vbCrLf & _
 								"WHERE fwID = " & fwID
@@ -43,19 +44,15 @@ function SQL_ATUALIZA_FUTURES_WHEEL_POSITION(fwID, posX, posY)
 	SQL_ATUALIZA_FUTURES_WHEEL_POSITION = "UPDATE T_FTA_METHOD_FUTURES_WHEEL SET posX = '" & posX & "', posY = '" & posY & "' WHERE fwID = " & fwID
 end function
 
-
 function SQL_ATUALIZA_FUTURES_WHEEL_LINK(actualFWID, parentFWID)
 	SQL_ATUALIZA_FUTURES_WHEEL_LINK = "UPDATE T_FTA_METHOD_FUTURES_WHEEL_LINK SET " & vbCrLf & _
 										"parentFWID = '" & parentFWID & "' "& vbCrLf & _
 										"WHERE actualFWID = " & actualFWID
 end function
 
-function SQL_CRIA_FUTURES_WHEEL(stepID, fwEvent, parentFWID, posX, posY) ' Not used
+function SQL_CRIA_FUTURES_WHEEL(stepID, fwEvent, parentFWID, posX, posY)
 	SQL_CRIA_FUTURES_WHEEL = "INSERT INTO T_FTA_METHOD_FUTURES_WHEEL (stepID, event, posX, posY) " & vbCrLf & _
-							"VALUES (" & stepID & ", '" & fwEvent & "', " & posX & ", " & posY & ")"  & vbCrLf & _
-							vbCrLf & _
-							"INSERT INTO T_FTA_METHOD_FUTURES_WHEEL_LINK (actualFWID, parentFWID) " & vbCrLf & _
-							"VALUES (@@IDENTITY, " & parentFWID & ")"
+							"VALUES (" & stepID & ", '" & Replace(fwEvent, "'", "''") & "', " & posX & ", " & posY & ")"
 end function
 
 function SQL_CRIA_FUTURES_WHEEL_LINK(actualFWID, parentFWID)
@@ -75,7 +72,6 @@ end function
 
 Sub printFWEvent(fwEvent, order, editMode) 
 %>
-
 	<div class="window context-menu order-<%=order%>" id="<%=fwEvent(0)%>" style="top:<%=fwEvent(5)%>px; left:<%=fwEvent(4)%>px;">
 		<input type="hidden" name="fwID[]" value="<%=fwEvent(0)%>" />
 		<input type="hidden" name="stepID[]" value="<%=fwEvent(1)%>" />
@@ -95,6 +91,7 @@ Sub printFWEvent(fwEvent, order, editMode)
 <%End Sub
 
 function getOrder(fwID) 
+	Dim rsFW, maxOrder, currentOrder
 	Call getRecordSet (SQL_CONSULTA_FUTURES_WHEEL_LINK(fwID), rsFW)
 
 	getOrder = 0
@@ -112,11 +109,10 @@ function getOrder(fwID)
 		rsFW.moveNext()
 	Wend
 	getOrder = maxOrder +1
-
 end function
 
-
 function getParentList(fwID) 
+	Dim rsFW, List
 	Call getRecordSet (SQL_CONSULTA_FUTURES_WHEEL_LINK(fwID), rsFW)
 
 	List=""
@@ -126,7 +122,11 @@ function getParentList(fwID)
 		rsFW.moveNext()
 	Wend
 
-	getParentList = mid(List, 1, len(List) - 3)
+	If Len(List) > 3 Then
+		getParentList = mid(List, 1, len(List) - 3)
+	Else
+		getParentList = ""
+	End If
 end function
 
 Sub printAllFWEvents(stepID, editMode)
@@ -141,9 +141,8 @@ Sub printAllFWEvents(stepID, editMode)
 	Call getRecordSet (SQL_CONSULTA_FUTURES_WHEEL_PRINCIPAL(stepID), rsFW)
 	
 	If rsFW.eof then
-		
+		' Não há eventos ainda
 	Else
-		
 		fwEvents(0) = rsFW("fwID")
 		fwEvents(1) = rsFW("stepID")
 		fwEvents(2) = rsFW("event")
@@ -161,7 +160,6 @@ Sub printAllFWEvents(stepID, editMode)
 		Call printFWEvent(fwEvents, order, editMode)
 		
 		While Not termina
-			
 			Call getRecordSet (SQL_CONSULTA_FUTURES_WHEEL_DERIVADAS(stepID, fwIDs), rsFW)
 		
 			fwIDs = ""
@@ -171,7 +169,6 @@ Sub printAllFWEvents(stepID, editMode)
 				termina = True
 			Else
 				While Not rsFW.EOF
-					
 					fwEvents(0) = rsFW("fwID")
 					fwEvents(1) = rsFW("stepID")
 					fwEvents(2) = trim(rsFW("event"))
@@ -189,9 +186,83 @@ Sub printAllFWEvents(stepID, editMode)
 				
 				fwIDs = mid(fwIDs, 1, len(fwIDs) - 2)
 			End If
-			
 		Wend
-		
 	End If
 End Sub
+
+' ========== FUNÇÕES DUBLIN CORE ==========
+
+Function getWorkflowID(stepID)
+    Dim rs
+    Call getRecordSet("SELECT workflowID FROM T_WORKFLOW_STEP WHERE stepID = " & stepID, rs)
+    If Not rs.EOF Then
+        getWorkflowID = rs("workflowID")
+    Else
+        getWorkflowID = 0
+    End If
+End Function
+
+Function getPreviousSteps(workflowID, currentStepID)
+    Dim rs, steps
+    Dim i
+    i = 0
+    steps = ""
+    
+    Call getRecordSet("SELECT ws.stepID FROM T_WORKFLOW_STEP ws " & _
+                      "INNER JOIN T_WORKFLOW_STEP_POSITION wsp ON ws.stepID = wsp.stepID " & _
+                      "WHERE ws.workflowID = " & workflowID & " " & _
+                      "AND wsp.position < (SELECT wsp2.position FROM T_WORKFLOW_STEP_POSITION wsp2 WHERE wsp2.stepID = " & currentStepID & ") " & _
+                      "ORDER BY wsp.position", rs)
+    
+    While Not rs.EOF
+        If steps <> "" Then steps = steps & ","
+        steps = steps & rs("stepID")
+        rs.MoveNext()
+    Wend
+    
+    getPreviousSteps = steps
+End Function
+
+Function getStepPosition(stepID)
+    Dim rs
+    Call getRecordSet("SELECT position FROM T_WORKFLOW_STEP_POSITION WHERE stepID = " & stepID, rs)
+    If Not rs.EOF Then
+        getStepPosition = rs("position")
+    Else
+        getStepPosition = 0
+    End If
+End Function
+
+Function getMethodName(stepID)
+    Dim rs
+    Call getRecordSet("SELECT fm.name FROM tiamat_fta_methods fm " & _
+                      "INNER JOIN tiamat_steps s ON fm.id = s.method_id " & _
+                      "WHERE s.step_id = " & stepID, rs)
+    If Not rs.EOF Then
+        getMethodName = rs("name")
+    Else
+        getMethodName = "Unknown"
+    End If
+End Function
+
+Function SQL_CONSULTA_DUBLIN_CORE_PREVIOUS_STEPS(stepIDs)
+    If stepIDs <> "" Then
+        SQL_CONSULTA_DUBLIN_CORE_PREVIOUS_STEPS = "SELECT dc.*, s.step_id, fm.name as method_name " & vbCrLf & _
+                                                  "FROM tiamat_dublin_core dc " & vbCrLf & _
+                                                  "INNER JOIN tiamat_steps s ON dc.step_id = s.step_id " & vbCrLf & _
+                                                  "INNER JOIN tiamat_fta_methods fm ON s.method_id = fm.id " & vbCrLf & _
+                                                  "WHERE dc.step_id IN (" & stepIDs & ") " & vbCrLf & _
+                                                  "ORDER BY dc.dc_date DESC"
+    Else
+        SQL_CONSULTA_DUBLIN_CORE_PREVIOUS_STEPS = "SELECT * FROM tiamat_dublin_core WHERE 1=0"
+    End If
+End Function
+
+Function SQL_CONSULTA_FUTURES_WHEEL_DUBLIN_CORE(stepID)
+    SQL_CONSULTA_FUTURES_WHEEL_DUBLIN_CORE = "SELECT fwdc.*, dc.* " & vbCrLf & _
+                                             "FROM T_FTA_METHOD_FUTURES_WHEEL_DUBLIN_CORE fwdc " & vbCrLf & _
+                                             "INNER JOIN tiamat_dublin_core dc ON fwdc.dublin_core_id = dc.dublin_core_id " & vbCrLf & _
+                                             "INNER JOIN T_FTA_METHOD_FUTURES_WHEEL fw ON fwdc.fwID = fw.fwID " & vbCrLf & _
+                                             "WHERE fw.stepID = " & stepID
+End Function
 %>

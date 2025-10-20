@@ -12,16 +12,9 @@ Dim height
 firstEvent = False
 height = 500
 
-' CAPTURAR stepID corretamente
-Dim stepID
-stepID = Request.QueryString("stepID")
-
-' Se não vier na query string, tentar da sessão
-If stepID = "" Then
-    stepID = Session("stepID")
-End If
-
-If stepID <> "" Then
+If request.querystring("stepID") <> "" Then
+	stepID = request.querystring("stepID")
+	
 	Call getRecordSet (SQL_CONSULTA_FUTURES_WHEEL_PRINCIPAL(stepID), rs)
 
 	If rs.EOF Then
@@ -36,20 +29,6 @@ If stepID <> "" Then
 		End If
 	End If
 End If
-
-' Verificar se há dados Dublin Core de métodos anteriores
-Dim hasDublinCoreData
-hasDublinCoreData = False
-
-' Verificar se existe tabela Dublin Core e se há dados para este step
-On Error Resume Next
-Call getRecordSet("SELECT COUNT(*) as total FROM T_FTA_DUBLIN_CORE_METADATA WHERE stepID IN (SELECT parentStepID FROM tiamat_step_relationships WHERE stepID = " & stepID & ")", rs)
-If Not rs.EOF Then
-    If rs("total") > 0 Then
-        hasDublinCoreData = True
-    End If
-End If
-On Error Goto 0
 
 tiamat.addCSS("/css/jsplumb.css")
 tiamat.addCSS("fw.css")
@@ -67,13 +46,7 @@ render.renderTitle()
 %>
 
 <div class="p-3">
-	<!-- FORMULÁRIO OCULTO PARA SALVAR EVENTO -->
-	<form id="saveEventForm" action="fwActions.asp?action=save" method="POST" style="display:none;">
-		<input type="hidden" name="stepID" id="form-stepID" value="<%=stepID%>" />
-		<input type="hidden" name="fw-event-text" id="form-event-text" value="" />
-		<input type="hidden" name="fw-event-parents" id="form-event-parents" value="" />
-		<input type="hidden" name="fw-event-id" id="form-event-id" value="" />
-	</form>
+	<form id="fwform" action="fwActions.asp?action=save" method="POST" class="requires-validation m-0" novalidate>	
 
 	<%if Session("futuresWheelError") <> "" then%>
 	<div class="alert alert-danger alert-dismissible" role="alert">
@@ -84,27 +57,6 @@ render.renderTitle()
 	Session("futuresWheelError") = ""
 	end if
 	%>	  
-	
-	<%if Session("futuresWheelSuccess") <> "" then%>
-	<div class="alert alert-success alert-dismissible" role="alert">
-		<%=Session("futuresWheelSuccess")%>
-		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	</div>		
-	<%
-	Session("futuresWheelSuccess") = ""
-	end if
-	%>
-	
-	<%If hasDublinCoreData Then%>
-	<div class="alert alert-info alert-dismissible" role="alert">
-		<i class="bi bi-info-circle"></i> <strong>Dublin Core Data Available:</strong> 
-		Previous method data is available to inspire your Futures Wheel events.
-		<button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="verDublinCore()">
-			<i class="bi bi-eye"></i> View DC Data
-		</button>
-		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	</div>
-	<%End If%>
 	
 	<div class="demo chart-demo" id="future-wheels" style="height:2000px">
 		<%
@@ -126,149 +78,46 @@ render.renderTitle()
 				</div>
 				<div class="modal-body">
 					<div class="mb-3">
-						<label for="modal-event-text" class="form-label">Event</label>
-						<input type="text" id="modal-event-text" value="" class="form-control" required>
+						<label for="fw-event-text" class="form-label">Event</label>
+						<input type="text" name="fw-event-text" id="fw-event-text" value="" class="form-control" required>
 						<div class="invalid-feedback">Event cannot be blank!</div>
 					</div>
 					
 					<div class="mb-3">
-						<label for="modal-event-parents" class="form-label">Parent events</label>
-						<select class="form-control" id="modal-event-parents" size="10" multiple="multiple"></select>
+						<label for="fw-event-parents" class="form-label">Parent events</label>
+						<select class="form-control" name="fw-event-parents" id="fw-event-parents" size="10" multiple="multiple"></select>
 					</div>
-					
-					<%If hasDublinCoreData Then%>
-					<div class="mb-3">
-						<div class="d-flex justify-content-between align-items-center">
-							<small class="text-muted">Need inspiration? Check Dublin Core data from previous methods:</small>
-							<button type="button" class="btn btn-sm btn-outline-info" onclick="verDublinCore()">
-								<i class="bi bi-lightbulb"></i> View DC Data
-							</button>
-						</div>
-					</div>
-					<%End If%>
 				</div>
 				<div class="modal-footer">
-					<input type="hidden" id="modal-event-id" value="" />
+					<input type="hidden" name="stepID" value="<%=stepID%>" />
+					<input type="hidden" id="redirectLink" name="redirectLink" value="0" />
+					<input type="hidden" name="fw-event-id" id="fw-event-id" value="" />
 					<button type="button" class="btn btn-sm btn-secondary m-1 text-center" data-bs-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-sm btn-danger m-1 text-center" onclick="saveEvent()"><i class="bi bi-save text-light"></i> Save</button>
+					<button type="submit" class="btn btn-sm btn-danger m-1 text-center" id="fw-save-event"><i class="bi bi-save text-light"></i> Save</button>
 				</div> 
 			</div>
 		</div>
 	</div>		
+	</form>	
 </div>
 
-<!-- NAVBAR COM BOTÕES -->
 <nav class="navbar fixed-bottom navbar-light bg-light" id="navbar">
 	<div class="container-fluid justify-content-center p-0">
-		<!-- O botão Add Event aparece quando existe pelo menos um evento -->
-		<button class="btn btn-sm btn-primary m-1" type="button" onclick="showAddEventForm()" id="btnAddEvent" style="display:none;">
-			<i class="bi bi-plus-circle text-light"></i> Add Event
-		</button>
-		
-		<%If hasDublinCoreData Then%>
-		<button class="btn btn-sm btn-info m-1" type="button" onclick="verDublinCore()">
-			<i class="bi bi-eye text-light"></i> View DC
-		</button>
-		<%End If%>
-		
-		<button class="btn btn-sm btn-secondary m-1" type="button" onclick="printDiv($('#future-wheels')[0]);"> 
+		<button class="btn btn-sm btn-secondary m-1" type="button" onclick="printDiv($('#fwform')[0]);"> 
 			<i class="bi bi-download text-light"></i> Export
 		</button>
 		
-		<button class="btn btn-sm btn-danger m-1" onclick="top.location.href='/stepsupportInformation.asp?stepID=<%=stepID%>';">
+		<button class="btn btn-sm btn-danger m-1" onclick="top.location.href='/stepsupportInformation.asp?stepID=<%=request.queryString("stepID")%>';">
 			<i class="bi bi-journal-plus text-light"></i> Supporting Information
 		</button>
-		
-		<button class="btn btn-sm btn-danger m-1" onclick="if(confirm('This action cannot be undone. Are you sure to end this FTA method now?'))top.location.href='/FTA/fw/fwActions.asp?action=end&stepID=<%=stepID%>'">
+		<button class="btn btn-sm btn-danger m-1" onclick="if(confirm('This action cannot be undone. Are you sure to end this FTA method now?'))top.location.href='/FTA/fw/fwActions.asp?action=end&stepID=<%=request.queryString("stepID")%>'">
 			<i class="bi bi-check-lg text-light"></i> Finish
 		</button>
 	</div>
-</nav>
-
-<!-- CSS para melhorar a aparência -->
-<style>
-#navbar {
-    z-index: 1050;
-    background-color: rgba(248, 249, 250, 0.95) !important;
-    backdrop-filter: blur(10px);
-    border-top: 1px solid #dee2e6;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-#navbar .btn {
-    min-width: 100px;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
-}
-
-#navbar .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-#btnAddEvent {
-    animation: slideInUp 0.5s ease-out;
-}
-
-@keyframes slideInUp {
-    from { 
-        opacity: 0; 
-        transform: translateY(20px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-}
-
-.btn-info {
-    background: linear-gradient(45deg, #17a2b8, #117a8b) !important;
-    border: none !important;
-}
-</style>
+</nav>				
 
 <script src="/js/dom.jsPlumb-1.7.3-min.js"></script>
 <script>
-// FUNÇÃO PRINCIPAL PARA SALVAR EVENTO
-function saveEvent() {
-    var eventText = document.getElementById('modal-event-text').value;
-    
-    if (!eventText || eventText.trim() === '') {
-        alert('Please inform an event description.');
-        document.getElementById('modal-event-text').focus();
-        return false;
-    }
-    
-    // Obter parents selecionados
-    var selectedParents = [];
-    var selectElement = document.getElementById('modal-event-parents');
-    for (var i = 0; i < selectElement.options.length; i++) {
-        if (selectElement.options[i].selected) {
-            selectedParents.push(selectElement.options[i].value);
-        }
-    }
-    
-    <%If Not firstEvent Then%>
-    if (selectedParents.length === 0) {
-        alert("Please select at least one parent event.");
-        return false;
-    }
-    <%End If%>
-    
-    // Preencher formulário oculto
-    document.getElementById('form-event-text').value = eventText.trim();
-    document.getElementById('form-event-parents').value = selectedParents.join(',');
-    
-    // Fechar modal
-    var modal = bootstrap.Modal.getInstance(document.getElementById('addEvent'));
-    if (modal) {
-        modal.hide();
-    }
-    
-    // Submeter formulário
-    document.getElementById('saveEventForm').submit();
-}
-
 function fillFormAdd(order, parentFWID) {
 	var elems = $('.chart-demo .window');
 	var elem = null;
@@ -294,7 +143,7 @@ function fillFormAdd(order, parentFWID) {
 		}
 	}
 	
-	$('#modal-event-parents').html(options);
+	$('#fw-event-parents').html(options);
 }
 
 function fillFormEdit(fwID, fwEvent, order, parentFWID) {
@@ -307,8 +156,8 @@ function fillFormEdit(fwID, fwEvent, order, parentFWID) {
 	var parentFWIDs = null;
 	
 	clearForm();
-	$('#modal-event-id').prop('value', fwID);
-	$('#modal-event-text').val(fwEvent);
+	$('#fw-event-id').prop('value', fwID);
+	$('#fw-event-text').val(fwEvent);
 	
 	if (parentFWID !== fwID) {
 		parentFWIDs = parentFWID.split(' | ');
@@ -329,61 +178,7 @@ function fillFormEdit(fwID, fwEvent, order, parentFWID) {
 		}
 	}
 	
-	$('#modal-event-parents').html(options);
-}
-
-function clearForm() {
-	$('#modal-event-id').prop('value', '');
-	$('#modal-event-id').val('');
-	$('#modal-event-text').val('');
-	$('#modal-event-parents').html('');
-}
-
-function showForm(title) {
-	$('#addModalLabel').text(title || 'Add Event');
-	clearForm();
-	
-	// Se não há eventos ainda, não precisa de parent
-	<%If firstEvent Then%>
-		$('#modal-event-parents').html('<option value="">No parent needed - First event</option>');
-		$('#modal-event-parents').prop('disabled', true);
-	<%Else%>
-		$('#modal-event-parents').prop('disabled', false);
-		// Preencher com eventos existentes como possíveis parents
-		var elems = $('.chart-demo .window');
-		var options = '';
-		elems.each(function() {
-			var fwID = $(this).find('input[name="fwID[]"]').prop('value');
-			var fwEvent = $(this).find('input[name="fwEvent[]"]').prop('value');
-			if(fwID && fwID != '') {
-				options += '<option value="' + fwID + '">' + fwEvent + '</option>';
-			}
-		});
-		$('#modal-event-parents').html(options);
-		// Selecionar o primeiro por padrão
-		$('#modal-event-parents option:first').prop('selected', true);
-	<%End If%>
-	
-	var addEventModal = new bootstrap.Modal(document.getElementById('addEvent'));
-	addEventModal.show();
-}
-
-function showAddEventForm() {
-	showForm('Add New Event');
-}
-
-function hideForm() {
-	var modal = bootstrap.Modal.getInstance(document.getElementById('addEvent'));
-	if (modal) {
-		modal.hide();
-	}
-}
-
-function verDublinCore() {
-    var popup = window.open('dcData.asp?stepID=<%=stepID%>', 
-                           'DublinCoreData', 
-                           'width=1000,height=800,scrollbars=yes,resizable=yes');
-    popup.focus();
+	$('#fw-event-parents').html(options);
 }
 
 function confirmDeletion(fwID, fwEvent, order) {
@@ -428,6 +223,25 @@ function confirmDeletion(fwID, fwEvent, order) {
 	}
 }
 
+function clearForm() {
+	$('#fw-event-id').prop('value', '');
+	$('#fw-event-id').val('');
+	$('#fw-event-text').val('');
+	$('#fw-event-parents').html('');
+}
+
+function showForm(title) {
+	var addEventModal = new bootstrap.Modal(document.getElementById('addEvent'))
+	addEventModal.show()
+}
+
+function hideForm() {
+	var modal = bootstrap.Modal.getInstance(document.getElementById('addEvent'));
+	if (modal) {
+		modal.hide();
+	}
+}
+
 function validateSave() {
 	console.log('validateSave');
 	var fwForm = $('form').first()[0];
@@ -449,28 +263,16 @@ function validateSave() {
 			elem.find('input[name="posY[]"]').prop('value', parseInt(elem.css('top')));
 		}
 	}
+	var formEl = document.forms.fwform;
+	var formData = new FormData(formEl);
+	console.log(formData);
 	
 	fwForm.submit();
 }
 
-function updateAddEventButton() {
-	const events = $('.chart-demo .window');
-	const btnAddEvent = $('#btnAddEvent');
-	
-	console.log('Checking events count:', events.length);
-	
-	if (events.length > 0) {
-		btnAddEvent.show();
-		console.log('Add Event button shown');
-	} else {
-		btnAddEvent.hide();
-		console.log('Add Event button hidden');
-	}
-}
-
-// Background save
 async function backgroundSave() {
-	var nodes = [];
+	var nodes = []
+
 	$(".window").each(function (idx, elem) {
 		var $elem = $(elem);
 		nodes.push({
@@ -486,7 +288,7 @@ async function backgroundSave() {
 	const response = await fetch('fwActions.asp?action=savePos', {
 		method: 'POST',
 		headers: {
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/x-www-form-urlencoded'
 		},
 		body: JSON.stringify(graph)
 	});
@@ -521,6 +323,7 @@ $(document).ready(function () {
 			var k = 0;
 			var parentFWIDs = null;
 			var elem = null;
+			var elemChildren = [];
 			
 			for (i = 0; i < window.fwEvents.length; i++) {
 				elem = $(window.fwEvents[i]);
@@ -550,32 +353,12 @@ $(document).ready(function () {
 		jsPlumb.fire("jsPlumbDemoLoaded", window.fwInstance);
 	});
 
-	window.stepID = '<%=stepID%>';
+	window.stepID = $('input[name="stepID"]').prop('value');
 	window.OPER_NO = 0;
 	window.OPER_ADD = 1;
 	window.OPER_EDIT = 2;
 	window.OPER_DEL = 3;
 	
-	// Verifica se deve mostrar o botão Add Event
-	updateAddEventButton();
-	
-	// Observer para detectar mudanças no DOM
-	if (window.MutationObserver) {
-		const observer = new MutationObserver(function(mutations) {
-			mutations.forEach(function(mutation) {
-				if (mutation.type === 'childList') {
-					updateAddEventButton();
-				}
-			});
-		});
-		
-		observer.observe(document.getElementById('future-wheels'), { 
-			childList: true, 
-			subtree: true 
-		});
-	}
-	
-	// Context menu para clicar com botão direito
 	$.contextMenu({
 		selector: '.context-menu', 
 		items: {
@@ -586,7 +369,7 @@ $(document).ready(function () {
 					var order = elem.find('input[name="order[]"]').prop('value');
 					closeMenu();
 					fillFormAdd(order, fwID);
-					showForm('Add new event');
+					showForm('Add new record');
 				}},
 			"edit": {name: "Edit Event", icon: "edit", 
 				callback: function() {
@@ -597,7 +380,7 @@ $(document).ready(function () {
 					var parentFWID = elem.find('input[name="parentFWID[]"]').prop('value');
 					closeMenu();
 					fillFormEdit(fwID, fwEvent, order, parentFWID);
-					showForm('Edit event');
+					showForm('Edit record');
 				}},
 			"del": {name: "Remove Event", icon: "delete", 
 				callback: function() {
@@ -615,6 +398,101 @@ $(document).ready(function () {
 		}
 	});
 	
+	$('#fw-save-event').click(function() {
+		var fwForm = $('form').first()[0];
+		
+		var fwID = $('#fw-event-id').prop('value');
+		var fwEvent = $('#fw-event-text').val();
+		var parentFWIDs = $('#fw-event-parents option:selected');
+		var parentFWID = '';
+		
+		var fwEvents = null;
+		var posX = 0;
+		var posY = 0;
+		
+		var order = 0;
+		var elem = null;
+		
+		if (fwEvent) {
+			fwEvent = fwEvent.trim();
+		}
+		
+		if (fwEvent === '') {
+			alert('Please inform an event description.');
+			$('#fw-event-text').focus();
+			return;
+		}
+		
+		<%
+		If Not firstEvent Then
+		%>
+		if (parentFWIDs.length === 0) {
+			if (fwID !== $('#' + fwID).find('input[name="parentFWID[]"]').prop('value')) {
+				alert("Events (except the first) must have at least one parent event.");
+				return;
+			}
+		}
+		<%
+		End If
+		%>
+		
+		for (i = 0; i < parentFWIDs.length; i++) {
+			parentFWID += $(parentFWIDs[i]).prop('value') + ' | ';
+		}
+		if (parentFWID !== '') {
+			parentFWID = parentFWID.substr(0, parentFWID.length - 3);
+		}
+		
+		if (!fwID) { // New event
+			<%
+			If firstEvent Then
+			%>
+			if (parentFWID === '') {
+				parentFWID = '0';
+			}
+			<%
+			Else
+			%>
+			if (parentFWID === '') {
+				alert('Please inform one or more parent events.');
+				return;
+			}
+			
+			elem = $('#' + $(parentFWIDs[parentFWIDs.length-1]).prop('value'));
+			order = parseInt(elem.find('input[name="order[]"]').prop('value')) + 1;
+			posX = parseInt(elem.find('input[name="posX[]"]').prop('value')) + 50;
+			posY = parseInt(elem.find('input[name="posY[]"]').prop('value')) + 50;
+			
+			<%
+			End If
+			%>
+			var element = '';
+			element += '<div class="window order-0" id="" style="display:none;top:0px;left:0px;">'
+			element += '<input type="hidden" name="fwID[]" value="" />';
+			element += '<input type="hidden" name="stepID[]" value="<%=request.querystring("stepID")%>" />';
+			element += '<input type="hidden" name="parentFWID[]" value="' + parentFWID + '" />';
+			element += '<input type="hidden" name="fwEvent[]" value="' + fwEvent + '" />';
+			element += '<input type="hidden" name="posX[]" value="' + posX + '" />';
+			element += '<input type="hidden" name="posY[]" value="' + posY + '" />';
+			element += '<input type="hidden" name="order[]" value="' + order + '" />';
+			element += '<input type="hidden" name="operation[]" value="' + window.OPER_ADD + '" />';
+			element += '<p>' + fwEvent + '</p>';
+			element += '</div>';
+			
+			$('#future-wheels').append(element);
+		} else { // Editing event
+			if (parentFWID === '') {
+				parentFWID = fwID;
+			}
+			$('#' + fwID + ' p').html(fwEvent);
+			$('#' + fwID + ' input[name="fwEvent[]"]').prop('value', fwEvent);
+			$('#' + fwID + ' input[name="parentFWID[]"]').prop('value', parentFWID);
+			$('#' + fwID + ' input[name="operation[]"]').prop('value', window.OPER_EDIT);
+		}
+		
+		validateSave();
+	});
+	
 	function closeMenu(){
 		const collection = document.getElementsByClassName("context-menu-list context-menu-root");
 		if (collection && collection.length > 0) {
@@ -623,14 +501,66 @@ $(document).ready(function () {
 		$('#context-menu-layer').hide();
 	}
 	
-	<%If firstEvent Then%>
-	// Se não há eventos, mostrar o formulário automaticamente
-	showForm('Add first event');
-	<%End If%>
+	<%
+	if firstEvent then
+	%>
+	showForm();
+	<%
+	end if
+	%>
 });
 
 function printDiv(div) {
-	window.print();
+	$("#navbar").hide();
+
+	var svgList = document.querySelectorAll('svg');
+	window.scroll(0,0);
+	
+	for (var svg of svgList) {
+		var svgData = new XMLSerializer().serializeToString(svg);
+		try {
+			svgData = svgData.replace(/ xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, '');
+
+			var canvas = document.createElement('canvas');
+			var ctx = canvas.getContext('2d');
+			
+			v = canvg.Canvg.fromString(ctx, svgData);
+			v.start();
+			
+			canvas.style.position = "absolute";
+			
+			var offset = $(svg).offset();
+			var posY = offset.top - $(window).scrollTop();
+			var posX = offset.left - $(window).scrollLeft(); 
+			
+			canvas.style.left = posX;
+			canvas.style.top = posY;
+			
+			div.appendChild(canvas);
+			svg.remove();
+		}
+		catch (e) {
+			console.log(e); 
+		}
+	}
+
+	html2canvas(div).then((canvas) => {
+		var myImage = canvas.toDataURL();
+		downloadURI(myImage, "futures-wheel.png");
+		
+		window.location.reload();
+	});
+	
+	$("#navbar").show();
+}
+
+function downloadURI(uri, name) {
+	var link = document.createElement("a");
+	console.log(link);
+	link.download = name;
+	link.href = uri;
+	document.body.appendChild(link);
+	link.click();   
 }
 </script>
 
